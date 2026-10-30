@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 /* Layout: same dark band as the live page, then filter chips and a grid of sauna cards. */
 :root{
@@ -56,6 +57,13 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-off
 .links a{color:var(--accent);text-decoration:none}.links a:hover{text-decoration:underline}
 .status{display:inline-flex;align-items:center;gap:6px;font:600 11.5px var(--body);color:var(--muted)}
 .status::before{content:"";width:8px;height:8px;border-radius:50%;border:2px solid var(--muted)}
+#map{height:420px;border-radius:14px;border:1px solid var(--line);z-index:0}
+@media (max-width:600px){#map{height:320px}}
+.mapnote{font-size:12.5px;color:var(--muted);margin:-8px 0 0}
+.pin{width:16px;height:16px;border-radius:50%;background:var(--accent);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.pin.wood{background:#7A4E2D}.pin.plan{background:#2F6FA3}
+.leaflet-popup-content{font-family:var(--body);font-size:13px}.leaflet-popup-content b{font-family:var(--display);font-size:15px}
+.card{cursor:pointer}.card.sel{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
 .foot{font-size:12.5px;color:var(--muted)}
 footer{border-top:1px solid var(--line);padding-block:18px;color:var(--muted);font-size:12.5px}
 </style>
@@ -83,43 +91,47 @@ footer{border-top:1px solid var(--line);padding-block:18px;color:var(--muted);fo
     <button type="button" data-f="business" aria-pressed="false">Business and hotel</button>
   </div>
 
+  <div id="map" role="region" aria-label="Map of saunas in Oulu"></div>
+  <p class="mapnote" id="mapnote">Locating saunas on the map…</p>
+
   <div class="grid" id="grid"></div>
 
-  <p class="foot">Sources: <a href="https://oulu.com/en/ihoulu/news-events/steam-and-spirit-sauna-traditions-of-finland/">Oulu.com, Steam and Spirit: Sauna Traditions of Finland</a> · <a href="https://www.businessoulu.com/en/news/kicksled-saunas-horse-cart-saunas-and-summer-evenings-by-the-oulu-river/">BusinessOulu, sauna festival</a> · <a href="https://jkmm.fi/work/tuiran-sauna/">JKMM, Tuiran Sauna</a> · <a href="https://www.kaleva.fi/vaakunakylan-yleinen-sauna-avaa-syyskuussa-lauteil/11745489">Kaleva, Olosauna</a> · <a href="https://www.laplandhotels.com/en/hotels-and-destinations/oulu/lapland-hotels-oulu/sauna-and-swimming-pool">Lapland Hotels Oulu</a>. Gathered October 2026.</p>
+  <p class="foot">Sources: <a href="https://oulu.com/en/ihoulu/news-events/steam-and-spirit-sauna-traditions-of-finland/">Oulu.com, Steam and Spirit: Sauna Traditions of Finland</a> · <a href="https://www.businessoulu.com/en/news/kicksled-saunas-horse-cart-saunas-and-summer-evenings-by-the-oulu-river/">BusinessOulu, sauna festival</a> · <a href="https://jkmm.fi/work/tuiran-sauna/">JKMM, Tuiran Sauna</a> · <a href="https://www.kaleva.fi/vaakunakylan-yleinen-sauna-avaa-syyskuussa-lauteil/11745489">Kaleva, Olosauna</a> · <a href="https://www.laplandhotels.com/en/hotels-and-destinations/oulu/lapland-hotels-oulu/sauna-and-swimming-pool">Lapland Hotels Oulu</a>. Gathered October 2026. Map: © OpenStreetMap contributors; locations found with OpenStreetMap Nominatim.</p>
 </main>
 
 <footer><div class="in">SteamFox · Hot when you arrive. Cheap while it heats. · Listings are informational; SteamFox has no partnership with these venues.</div></footer>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const SAUNAS=[
- {name:'Olosauna',where:'Vaakunakyläntie 9, Toppilansaari',cat:['public','floating'],
+ {name:'Olosauna',geo:'Vaakunakyläntie 9, Oulu',where:'Vaakunakyläntie 9, Toppilansaari',cat:['public','floating'],
   text:'A modern village sauna on the shore of Hartaanselkä, with a pier for a dip, a cold plunge and a café. Room for about 25 bathers at a time.',
   tags:['Paid public','Year-round','Café'],heat:'Not listed',url:'https://www.olosauna.fi/en/home/'},
- {name:'Kesän Sauna',where:'Koskitie 58, Tuira beach',cat:['public','floating'],
+ {name:'Kesän Sauna',geo:'Koskitie 58, Oulu',ll:[65.0247,25.4753],where:'Koskitie 58, Tuira beach',cat:['public','floating'],
   text:'Community-run sauna raft at Tuira beach on the Oulu River, a centre of the city’s sauna festival. Also hosts company recreation days and group events.',
   tags:['Paid public','Summer season'],heat:'Wood-fired',wood:true,url:'https://kesansauna.fi/'},
- {name:'Löylykontti',where:'Tuira beach',cat:['public','floating'],
+ {name:'Löylykontti',geo:'Tuiran uimaranta, Oulu',ll:[65.0249,25.4760],where:'Tuira beach',cat:['public','floating'],
   text:'A sauna container that opened at Tuira beach for the sauna festival and stayed on afterwards.',
   tags:['Public','Riverside'],heat:'Not listed',url:'https://www.businessoulu.com/en/news/kicksled-saunas-horse-cart-saunas-and-summer-evenings-by-the-oulu-river/'},
- {name:'Tuiran Sauna',where:'Tuira riverside',cat:['public','floating'],
+ {name:'Tuiran Sauna',geo:'Tuiran uimaranta, Oulu',ll:[65.0244,25.4768],where:'Tuira riverside',cat:['public','floating'],
   text:'A new year-round public sauna pavilion of about 800 m², with a café and facilities for winter swimmers. To be run by the Oulu Sauna Society (Oulun Rantasaunaseura).',
   tags:['Public','Year-round','Winter swimming'],plan:'In development',heat:'Not listed',url:'https://jkmm.fi/work/tuiran-sauna/'},
- {name:'Mallassauna',where:'Pikisaarentie 15, Pikisaari',cat:['public'],
+ {name:'Mallassauna',geo:'Pikisaarentie 15, Oulu',where:'Pikisaarentie 15, Pikisaari',cat:['public'],
   text:'A sauna bar on Pikisaari island. Free public access in summer; private bookings year-round.',
   tags:['Free in summer','Private bookings'],heat:'Not listed',url:'https://mallassauna.fi/'},
- {name:'Koivurannan Saunalautta',where:'Kasarmintie 51',cat:['public','floating'],
+ {name:'Koivurannan Saunalautta',geo:'Kasarmintie 51, Oulu',where:'Kasarmintie 51',cat:['public','floating'],
   text:'A floating sauna with river views, swimming access, a winter ice hole and a hot tub.',
   tags:['Paid public','Ice hole','Hot tub'],heat:'Not listed',url:'https://koivurannansaunalautta.fi/'},
- {name:'Oulun Torisauna',where:'Market Square, Torinranta',cat:['public'],
+ {name:'Oulun Torisauna',geo:'Kauppatori, Oulu',ll:[65.0136,25.4637],where:'Market Square, Torinranta',cat:['public'],
   text:'A seasonal city sauna at the Market Square that opens for festivals and events.',
   tags:['Seasonal','Events'],heat:'Not listed',url:'https://www.ouluntorisauna.fi/'},
- {name:'Nallikari Meriholsti',where:'Nallikari beach',cat:['business'],
+ {name:'Nallikari Meriholsti',geo:'Nallikari, Oulu',ll:[65.0300,25.4090],where:'Nallikari beach',cat:['business'],
   text:'A sea-view sauna with meeting rooms, rented to companies and groups at Nallikari.',
   tags:['Business rental','Meeting rooms'],heat:'Not listed',url:'https://nallikari.fi/en/for-companies/meeting-rooms-and-sauna-facilities/meriholsti/'},
- {name:'Loositalo',where:'Kaarnatie 36',cat:['business'],
+ {name:'Loositalo',geo:'Kaarnatie 36, Oulu',where:'Kaarnatie 36',cat:['business'],
   text:'A traditional sauna with meeting room rental for companies and groups.',
   tags:['Business rental','Meeting rooms'],heat:'Not listed',url:'https://www.loositalo.fi/'},
- {name:'Lapland Hotels Oulu',where:'Kirkkokatu 3, city centre',cat:['business'],
+ {name:'Lapland Hotels Oulu',geo:'Kirkkokatu 3, Oulu',where:'Kirkkokatu 3, city centre',cat:['business'],
   text:'A city hotel with saunas and a swimming pool for guests: the hotel sauna type in SteamFox’s plans.',
   tags:['Hotel','Guests'],heat:'Not listed',url:'https://www.laplandhotels.com/en/hotels-and-destinations/oulu/lapland-hotels-oulu/sauna-and-swimming-pool'}
 ];
@@ -140,6 +152,36 @@ function render(f){
 document.querySelectorAll('.chips button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.chips button').forEach(x=>x.setAttribute('aria-pressed',x===b));render(b.dataset.f)}));
 render('all');
+
+/* ---- map: Leaflet + OpenStreetMap; addresses are geocoded in the visitor's browser (cached) ---- */
+const map=L.map('map',{scrollWheelZoom:false}).setView([65.021,25.455],12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+const markers={};let placed=0;
+function cacheGet(k){try{return JSON.parse(localStorage.getItem('sf-geo-'+k))}catch(e){return null}}
+function cacheSet(k,v){try{localStorage.setItem('sf-geo-'+k,JSON.stringify(v))}catch(e){}}
+function place(s,ll,approx){
+  const cls=s.wood?'pin wood':s.plan?'pin plan':'pin';
+  const m=L.marker(ll,{icon:L.divIcon({className:'',html:`<div class="${cls}"></div>`,iconSize:[16,16],iconAnchor:[8,8]}),title:s.name}).addTo(map)
+   .bindPopup(`<b>${s.name}</b><br>${s.where}${approx?'<br><i>approximate location</i>':''}<br><a href="${s.url}" target="_blank" rel="noopener">Website ↗</a>`);
+  markers[s.name]=m;placed++;
+}
+async function geocode(){
+  for(const s of SAUNAS){
+    let ll=cacheGet(s.geo),approx=false;
+    if(!ll){try{const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fi&q='+encodeURIComponent(s.geo));const j=await r.json();
+        if(j[0]){ll=[+j[0].lat,+j[0].lon];cacheSet(s.geo,ll)}}catch(e){}
+      await new Promise(r=>setTimeout(r,1100));}
+    if(!ll&&s.ll){ll=s.ll;approx=true}
+    if(ll)place(s,ll,approx);
+  }
+  const pts=Object.values(markers).map(m=>m.getLatLng());
+  if(pts.length)map.fitBounds(L.latLngBounds(pts).pad(0.15));
+  document.getElementById('mapnote').textContent=`${placed} of ${SAUNAS.length} saunas shown on the map. Tap a pin or a card. Orange: public or business · brown: wood-fired · blue: in development.`;
+}
+grid.addEventListener('click',e=>{const c=e.target.closest('.card');if(!c||e.target.closest('a'))return;
+  const n=c.querySelector('h2').textContent;document.querySelectorAll('.card').forEach(x=>x.classList.toggle('sel',x===c));
+  const m=markers[n];if(m){map.flyTo(m.getLatLng(),15);m.openPopup();document.getElementById('map').scrollIntoView({behavior:'smooth',block:'center'})}});
+geocode();
 </script>
 </body>
 </html>
