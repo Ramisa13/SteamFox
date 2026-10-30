@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Saunas in Oulu · SteamFox</title>
+<meta name="description" content="Public and commercial saunas in Oulu, and where SteamFox could help.">
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: same dark band as the live page, then filter chips and a grid of sauna cards. */
+:root{
+  --bg:#F4EEE6; --surface:#FBF8F3; --ink:#1F1B18; --muted:#6B5F54; --line:#E2D7C8;
+  --band:#1F1B18; --band-ink:#F4EEE6; --band-muted:#B9AC9C;
+  --accent:#C8541E; --accent-2:#F08A4B; --sky:#2F6FA3; --sky-soft:#DCEAF5; --wood:#7A4E2D; --wood-soft:#F1E1D2;
+  --display:'Space Grotesk','Avenir Next','Segoe UI',sans-serif;
+  --body:'Public Sans','Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#17130F; --surface:#221C17; --ink:#F4EEE6; --muted:#B9AC9C; --line:#3A3129;
+  --band:#0F0C0A; --accent:#F08A4B; --accent-2:#F6A876; --sky:#8CC0E8; --sky-soft:#1C2C38; --wood:#E0B48C; --wood-soft:#3A2A1E; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg)}
+body{color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.in{max-width:1120px;margin:0 auto;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.band{background:var(--band);color:var(--band-ink)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;font-family:var(--display);font-weight:700;font-size:20px}.brand img{width:34px;height:34px}
+nav{display:flex;flex-wrap:wrap;gap:16px;font-size:14px}nav a{text-decoration:none;color:var(--band-muted)}nav a:hover,nav a[aria-current]{color:var(--band-ink)}
+.hero{padding-block:18px 32px}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2)}
+h1{font-family:var(--display);font-size:clamp(34px,6vw,56px);line-height:1;margin:8px 0 12px;text-wrap:balance}
+.hero p{max-width:62ch;color:var(--band-muted);margin:0}
+main{padding-block:22px 40px;display:flex;flex-direction:column;gap:16px}
+.notice{border-left:3px solid var(--accent-2);background:var(--surface);border-radius:6px;padding:10px 14px;font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{font:600 13px var(--body);padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card h2{font-family:var(--display);font-size:20px;margin:0;line-height:1.2}
+.where{font:500 12.5px var(--mono);color:var(--muted)}
+.card p{margin:0}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font:600 11.5px var(--body);padding:3px 8px;border-radius:99px;background:var(--bg);border:1px solid var(--line);color:var(--muted)}
+.tag.wood{background:var(--wood-soft);color:var(--wood);border-color:transparent}
+.tag.plan{background:var(--sky-soft);color:var(--sky);border-color:transparent}
+.fit{margin-top:auto;border-top:1px solid var(--line);padding-top:8px;font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:3px 10px}
+.fit dt{color:var(--muted)}.fit dd{margin:0}
+.links{display:flex;gap:14px;font-size:13.5px;font-weight:600}
+.links a{color:var(--accent);text-decoration:none}.links a:hover{text-decoration:underline}
+.status{display:inline-flex;align-items:center;gap:6px;font:600 11.5px var(--body);color:var(--muted)}
+.status::before{content:"";width:8px;height:8px;border-radius:50%;border:2px solid var(--muted)}
+.foot{font-size:12.5px;color:var(--muted)}
+footer{border-top:1px solid var(--line);padding-block:18px;color:var(--muted);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="band">
+  <div class="in top">
+    <a class="brand" href="index.html"><img src="logo.png" alt="">SteamFox</a>
+    <nav><a href="index.html">Home</a><a href="live.html">Live savings</a><a href="saunas.html" aria-current="page">Saunas in Oulu</a><a href="kit-3d.html">3D kit</a><a href="demo.html">Demo</a></nav>
+  </div>
+  <div class="in hero">
+    <div class="eyebrow">Oulu · the market on our doorstep</div>
+    <h1>Saunas in Oulu</h1>
+    <p>Oulu's public, floating, event and business saunas, gathered from public sources. Every one of them could show live heat and crowds on the SteamFox map, and the electrically heated ones could also save on power.</p>
+  </div>
+</div>
+
+<main class="in">
+  <div class="notice"><b>None of these saunas uses SteamFox.</b> They are listed from public information to show the local market. No live data is shown for them, and details may have changed, so check each sauna's own website.</div>
+
+  <div class="chips" role="group" aria-label="Filter saunas">
+    <button type="button" data-f="all" aria-pressed="true">All</button>
+    <button type="button" data-f="public" aria-pressed="false">Public</button>
+    <button type="button" data-f="floating" aria-pressed="false">Floating and riverside</button>
+    <button type="button" data-f="business" aria-pressed="false">Business and hotel</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <p class="foot">Sources: <a href="https://oulu.com/en/ihoulu/news-events/steam-and-spirit-sauna-traditions-of-finland/">Oulu.com, Steam and Spirit: Sauna Traditions of Finland</a> · <a href="https://www.businessoulu.com/en/news/kicksled-saunas-horse-cart-saunas-and-summer-evenings-by-the-oulu-river/">BusinessOulu, sauna festival</a> · <a href="https://jkmm.fi/work/tuiran-sauna/">JKMM, Tuiran Sauna</a> · <a href="https://www.kaleva.fi/vaakunakylan-yleinen-sauna-avaa-syyskuussa-lauteil/11745489">Kaleva, Olosauna</a> · <a href="https://www.laplandhotels.com/en/hotels-and-destinations/oulu/lapland-hotels-oulu/sauna-and-swimming-pool">Lapland Hotels Oulu</a>. Gathered October 2026.</p>
+</main>
+
+<footer><div class="in">SteamFox · Hot when you arrive. Cheap while it heats. · Listings are informational; SteamFox has no partnership with these venues.</div></footer>
+
+<script>
+const SAUNAS=[
+ {name:'Olosauna',where:'Vaakunakyläntie 9, Toppilansaari',cat:['public','floating'],
+  text:'A modern village sauna on the shore of Hartaanselkä, with a pier for a dip, a cold plunge and a café. Room for about 25 bathers at a time.',
+  tags:['Paid public','Year-round','Café'],heat:'Not listed',url:'https://www.olosauna.fi/en/home/'},
+ {name:'Kesän Sauna',where:'Koskitie 58, Tuira beach',cat:['public','floating'],
+  text:'Community-run sauna raft at Tuira beach on the Oulu River, a centre of the city’s sauna festival. Also hosts company recreation days and group events.',
+  tags:['Paid public','Summer season'],heat:'Wood-fired',wood:true,url:'https://kesansauna.fi/'},
+ {name:'Löylykontti',where:'Tuira beach',cat:['public','floating'],
+  text:'A sauna container that opened at Tuira beach for the sauna festival and stayed on afterwards.',
+  tags:['Public','Riverside'],heat:'Not listed',url:'https://www.businessoulu.com/en/news/kicksled-saunas-horse-cart-saunas-and-summer-evenings-by-the-oulu-river/'},
+ {name:'Tuiran Sauna',where:'Tuira riverside',cat:['public','floating'],
+  text:'A new year-round public sauna pavilion of about 800 m², with a café and facilities for winter swimmers. To be run by the Oulu Sauna Society (Oulun Rantasaunaseura).',
+  tags:['Public','Year-round','Winter swimming'],plan:'In development',heat:'Not listed',url:'https://jkmm.fi/work/tuiran-sauna/'},
+ {name:'Mallassauna',where:'Pikisaarentie 15, Pikisaari',cat:['public'],
+  text:'A sauna bar on Pikisaari island. Free public access in summer; private bookings year-round.',
+  tags:['Free in summer','Private bookings'],heat:'Not listed',url:'https://mallassauna.fi/'},
+ {name:'Koivurannan Saunalautta',where:'Kasarmintie 51',cat:['public','floating'],
+  text:'A floating sauna with river views, swimming access, a winter ice hole and a hot tub.',
+  tags:['Paid public','Ice hole','Hot tub'],heat:'Not listed',url:'https://koivurannansaunalautta.fi/'},
+ {name:'Oulun Torisauna',where:'Market Square, Torinranta',cat:['public'],
+  text:'A seasonal city sauna at the Market Square that opens for festivals and events.',
+  tags:['Seasonal','Events'],heat:'Not listed',url:'https://www.ouluntorisauna.fi/'},
+ {name:'Nallikari Meriholsti',where:'Nallikari beach',cat:['business'],
+  text:'A sea-view sauna with meeting rooms, rented to companies and groups at Nallikari.',
+  tags:['Business rental','Meeting rooms'],heat:'Not listed',url:'https://nallikari.fi/en/for-companies/meeting-rooms-and-sauna-facilities/meriholsti/'},
+ {name:'Loositalo',where:'Kaarnatie 36',cat:['business'],
+  text:'A traditional sauna with meeting room rental for companies and groups.',
+  tags:['Business rental','Meeting rooms'],heat:'Not listed',url:'https://www.loositalo.fi/'},
+ {name:'Lapland Hotels Oulu',where:'Kirkkokatu 3, city centre',cat:['business'],
+  text:'A city hotel with saunas and a swimming pool for guests: the hotel sauna type in SteamFox’s plans.',
+  tags:['Hotel','Guests'],heat:'Not listed',url:'https://www.laplandhotels.com/en/hotels-and-destinations/oulu/lapland-hotels-oulu/sauna-and-swimming-pool'}
+];
+const grid=document.getElementById('grid');
+const maps=s=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.name+', '+s.where+', Oulu');
+function render(f){
+  grid.innerHTML=SAUNAS.filter(s=>f==='all'||s.cat.includes(f)).map(s=>{
+    const energy=s.wood?'Live map only (wood-fired)':s.heat==='Not listed'?'If the heater is electric':'Yes';
+    return `<article class="card">
+      <span class="status">Not connected to SteamFox</span>
+      <h2>${s.name}</h2><div class="where">${s.where}</div>
+      <p>${s.text}</p>
+      <div class="tags">${s.plan?`<span class="tag plan">${s.plan}</span>`:''}${s.wood?'<span class="tag wood">Wood-fired</span>':''}${s.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      <dl class="fit"><dt>Heater</dt><dd>${s.heat}</dd><dt>Live map</dt><dd>Yes</dd><dt>Power saving</dt><dd>${energy}</dd></dl>
+      <div class="links"><a href="${s.url}" target="_blank" rel="noopener">Website ↗</a><a href="${maps(s)}" target="_blank" rel="noopener">Map ↗</a></div>
+    </article>`}).join('');
+}
+document.querySelectorAll('.chips button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.chips button').forEach(x=>x.setAttribute('aria-pressed',x===b));render(b.dataset.f)}));
+render('all');
+</script>
+</body>
+</html>
