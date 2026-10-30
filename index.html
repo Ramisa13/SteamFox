@@ -43,8 +43,8 @@ h2{font-family:var(--display);font-size:clamp(24px,3vw,32px);margin:0 0 18px;tex
 .fact{border-top:3px solid var(--accent);padding-top:12px}
 .fact b{display:block;font-family:var(--display);font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums}
 .fact p{margin:4px 0 0;color:var(--muted)}
-.doors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-@media (max-width:760px){.doors{grid-template-columns:1fr}}
+.doors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:900px){.doors{grid-template-columns:1fr}}
 .door{display:flex;flex-direction:column;gap:8px;padding:22px;border-radius:14px;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none}
 .door:hover,.door:focus-visible{border-color:var(--accent);outline:none}
 .door h3{font-family:var(--display);font-size:22px;margin:0}
@@ -68,6 +68,7 @@ footer{padding-block:28px;color:var(--muted);font-size:13px;border-top:1px solid
     <h1>SteamFox</h1>
     <p class="promise">Hot when you arrive.<br><span>Cheap while it heats.</span></p>
     <p class="lede">A small add-on kit and smart planning for commercial saunas. SteamFox heats when electricity is cheap and people are coming, and shows bathers which sauna is hot and how busy it is.</p>
+    <p style="margin:22px 0 0"><a href="live.html" style="display:inline-block;background:var(--accent-2);color:#1F1B18;font-weight:700;text-decoration:none;padding:12px 18px;border-radius:10px">See today's live saving →</a></p>
   </div>
   <img src="logo.png" alt="SteamFox logo: a geometric orange fox with sauna steam rising between its ears" width="300" height="300">
 </div></div>
@@ -85,6 +86,7 @@ footer{padding-block:28px;color:var(--muted);font-size:13px;border-top:1px solid
 <section style="padding-top:0"><div class="in">
   <h2>See it working</h2>
   <div class="doors">
+    <a class="door" href="live.html" style="border-color:var(--accent)"><h3>Live savings</h3><p>Today's real Finnish electricity prices, and what SteamFox saves an example sauna, updated every day.</p><span class="go">See today's saving →</span></a>
     <a class="door" href="kit-3d.html"><h3>The kit in 3D</h3><p>Rotate a cut-away sauna and tap each part: heat probe, controller, camera-free door counter, relay and meter.</p><span class="go">Open the 3D model →</span></a>
     <a class="door" href="demo.html"><h3>Operator demo</h3><p>The owner's dashboard on real Finnish spot prices: heating plan, peak alerts and the saving for the day.</p><span class="go">Open the demo →</span></a>
   </div>

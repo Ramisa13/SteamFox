@@ -4,6 +4,7 @@
 
 <p align="center">
   <a href="https://ramisa13.github.io/SteamFox/"><b>🌐 Website</b></a> ·
+  <a href="https://ramisa13.github.io/SteamFox/live.html"><b>⚡ Live savings</b></a> ·
   <a href="https://ramisa13.github.io/SteamFox/kit-3d.html"><b>🧊 3D kit</b></a> ·
   <a href="https://ramisa13.github.io/SteamFox/demo.html"><b>📊 Operator demo</b></a>
 </p>
@@ -69,8 +70,10 @@ We ran a 24 kW public sauna (open 06–22) through our model on **real Oulu spot
 
 | Day | Fixed timetable | With SteamFox | Saved |
 |---|---:|---:|---:|
-| Wed 8 Oct 2026, price spike | €54.41 | €45.65 | **€8.76 (16%)** |
-| Thu 9 Oct 2026, cheap flat day | €21.70 | €18.43 | **€3.27 (15%)** |
+| Thu 8 Oct 2026, price spike | €54.41 | €45.65 | **€8.76 (16%)** |
+| Fri 9 Oct 2026, cheap flat day | €21.70 | €18.43 | **€3.27 (15%)** |
+
+👉 **[See today's saving on live prices](https://ramisa13.github.io/SteamFox/live.html)**
 
 That works out to roughly **€100–260 a month** per sauna, against a subscription of €19–39.
 
@@ -139,8 +142,11 @@ We are also looking for **pilot saunas in Oulu** and an **electrical partner**.
 | File | What it is |
 |---|---|
 | `index.html` | Landing page |
+| `live.html` | Live savings: today's real electricity prices and the saving for an example sauna |
 | `kit-3d.html` | Interactive 3D model of the kit (three.js) |
 | `demo.html` | Operator dashboard demo on real Finnish spot prices |
+| `data/prices.json` | Latest Finnish spot prices, refreshed daily by a GitHub Action |
+| `scripts/fetch_prices.py`, `.github/workflows/prices.yml` | The daily price update |
 | `assets/` | Images used in this README |
 
 The site is plain HTML with no build step, published with GitHub Pages.

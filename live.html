@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SteamFox Live Savings</title>
+<meta name="description" content="Live Finnish electricity prices and what SteamFox would save a sauna today.">
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: dark band with today's saving as the headline number, then the price/heating chart, then controls + reasons side by side. */
+:root{
+  --bg:#F4EEE6; --surface:#FBF8F3; --ink:#1F1B18; --muted:#6B5F54; --line:#E2D7C8; --grid:#E8DFD3;
+  --band:#1F1B18; --band-ink:#F4EEE6; --band-muted:#B9AC9C;
+  --accent:#C8541E; --accent-2:#F08A4B; --save:#1E7A4F; --save-soft:rgba(30,122,79,.18);
+  --base:#8A7F74; --bar:#D9CDBE; --bar-peak:#E8A27C; --eco:#CFE6D8;
+  --display:'Space Grotesk','Avenir Next','Segoe UI',sans-serif;
+  --body:'Public Sans','Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#17130F; --surface:#221C17; --ink:#F4EEE6; --muted:#B9AC9C; --line:#3A3129; --grid:#2E2620;
+  --band:#0F0C0A; --accent:#F08A4B; --accent-2:#F6A876; --save:#5BC08A; --save-soft:rgba(91,192,138,.2);
+  --base:#9C9083; --bar:#3E342C; --bar-peak:#8A4A2A; --eco:#1F3A2C; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg)}
+body{color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.in{max-width:1120px;margin:0 auto;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+a{color:inherit}
+.band{background:var(--band);color:var(--band-ink)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--display);font-weight:700;font-size:20px}
+.brand img{width:34px;height:34px}
+nav{display:flex;gap:16px;font-size:14px}nav a{text-decoration:none;color:var(--band-muted)}nav a:hover,nav a[aria-current]{color:var(--band-ink)}
+.hero{padding-block:18px 34px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px 32px;align-items:end}
+@media (max-width:820px){.hero{grid-template-columns:1fr}}
+.status{display:inline-flex;align-items:center;gap:8px;font:500 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--band-muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:#5BC08A;box-shadow:0 0 0 0 rgba(91,192,138,.6);animation:pulse 2s infinite}
+.dot.sample{background:#F6A876;animation:none}
+@keyframes pulse{70%{box-shadow:0 0 0 9px rgba(91,192,138,0)}100%{box-shadow:0 0 0 0 rgba(91,192,138,0)}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+.hero h1{font-family:var(--display);font-size:clamp(20px,2.6vw,26px);font-weight:500;margin:10px 0 2px;color:var(--band-muted)}
+.big{font-family:var(--display);font-weight:700;font-size:clamp(56px,10vw,104px);line-height:.95;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:#7FD3A5}
+.sub{color:var(--band-muted);margin-top:8px;max-width:58ch}
+.kpis{display:grid;grid-template-columns:repeat(3,auto);gap:10px 26px}
+@media (max-width:520px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi b{display:block;font-family:var(--display);font-size:30px;line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi span{font-size:12px;color:var(--band-muted)}
+main{padding-block:24px 40px;display:flex;flex-direction:column;gap:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.chead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.chead h2{font-family:var(--display);font-size:20px;margin:0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{font:600 13px var(--body);border:0;background:transparent;color:var(--ink);padding:7px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chartwrap{overflow-x:auto}.chartwrap svg{min-width:640px;display:block}
+svg text{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+.ctl{display:grid;gap:14px}
+.ctl label{display:flex;justify-content:space-between;font-weight:600;font-size:14px}
+.ctl output{font-family:var(--mono);font-weight:500;color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>div{flex:1;min-width:120px}
+select{width:100%;font:15px var(--body);padding:7px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.month{border-top:1px solid var(--line);padding-top:12px;font-size:15px}
+.month b{font-family:var(--display);font-size:28px;color:var(--save);font-variant-numeric:tabular-nums}
+.reasons{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.reasons li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:baseline;padding:8px 10px;border-radius:9px;background:var(--bg)}
+.reasons .t{font:500 12.5px var(--mono);color:var(--muted)}
+.reasons .v{font-weight:700;color:var(--save);font-variant-numeric:tabular-nums}
+.note{font-size:12.5px;color:var(--muted);margin:0}
+.notice{border-left:3px solid var(--accent-2);padding:8px 12px;background:var(--surface);border-radius:6px;font-size:13.5px}
+footer{border-top:1px solid var(--line);padding-block:18px;color:var(--muted);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="band">
+  <div class="in top">
+    <a class="brand" href="index.html"><img src="logo.png" alt="">SteamFox</a>
+    <nav><a href="index.html">Home</a><a href="live.html" aria-current="page">Live savings</a><a href="kit-3d.html">3D kit</a><a href="demo.html">Demo</a></nav>
+  </div>
+  <div class="in hero">
+    <div>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">Loading prices…</span></div>
+      <h1 id="headline">Saved so far today</h1>
+      <div class="big" id="bigSaved">€0.00</div>
+      <div class="sub" id="subline">An example 24 kW public sauna in Oulu, heated by SteamFox instead of a fixed timetable.</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><b id="kpiKwh">–</b><span>kWh saved, whole day</span></div>
+      <div class="kpi"><b id="kpiEur">–</b><span>saved, whole day</span></div>
+      <div class="kpi"><b id="kpiPct">–</b><span>less than fixed timetable</span></div>
+    </div>
+  </div>
+</div>
+
+<main class="in">
+  <div class="notice" id="notice" hidden></div>
+
+  <section class="card" aria-labelledby="chartTitle">
+    <div class="chead">
+      <h2 id="chartTitle">Price and heating, <span id="dayLabel">today</span></h2>
+      <div class="seg" role="group" aria-label="Day">
+        <button type="button" id="btnToday" aria-pressed="true">Today</button>
+        <button type="button" id="btnTomorrow" aria-pressed="false">Tomorrow</button>
+      </div>
+    </div>
+    <div class="chartwrap"><svg id="chart" viewBox="0 0 1000 360" width="100%" role="img" aria-label="Electricity price and heater power through the day"></svg></div>
+    <div class="legend">
+      <span><i style="background:var(--bar)"></i>Spot price, c/kWh</span>
+      <span><i style="background:var(--bar-peak)"></i>Expensive slots</span>
+      <span><i style="background:var(--base);height:3px"></i>Fixed timetable heater power</span>
+      <span><i style="background:var(--accent);height:3px"></i>SteamFox heater power</span>
+      <span><i style="background:var(--save-soft);border:1px solid var(--save)"></i>Energy saved</span>
+    </div>
+  </section>
+
+  <div class="cols">
+    <section class="card ctl" aria-labelledby="ctlTitle">
+      <h2 id="ctlTitle" style="font-family:var(--display);font-size:20px;margin:0">Try your own sauna</h2>
+      <div>
+        <label for="kw">Heater size <output id="kwOut">24 kW</output></label>
+        <input type="range" id="kw" min="9" max="36" step="1" value="24">
+      </div>
+      <div class="row">
+        <div><label for="open">Opens</label><select id="open"></select></div>
+        <div><label for="close">Closes</label><select id="close"></select></div>
+      </div>
+      <div>
+        <label for="pattern">Visitor pattern</label>
+        <select id="pattern">
+          <option value="public">Public sauna: quiet mornings, busy evenings</option>
+          <option value="hotel">Hotel sauna: busy late evening</option>
+          <option value="spa">Spa: steady all day</option>
+        </select>
+      </div>
+      <div class="month">A sauna like this would save about <b id="monthEur">–</b> a month, and <b id="monthKwh" style="font-size:22px">–</b> of electricity, if every day were like this one.</div>
+    </section>
+
+    <section class="card" aria-labelledby="whyTitle">
+      <h2 id="whyTitle" style="font-family:var(--display);font-size:20px;margin:0">Where the saving comes from</h2>
+      <ul class="reasons" id="reasons"></ul>
+      <p class="note" style="margin-top:10px">SteamFox drops to eco standby when the sauna is quiet and power is expensive, and moves the morning warm-up to the cheapest slot.</p>
+    </section>
+  </div>
+
+  <p class="note" id="method">Model: heater runs at 100% while warming up, about 60% on average while open, 40% in eco standby and 35% to hold heat before opening. Prices are spot prices incl. VAT; transfer fees and electricity tax are not included, so real euro savings are a little higher. Visitor patterns are examples until pilot sensors are installed.</p>
+</main>
+
+<footer><div class="in">SteamFox · Hot when you arrive. Cheap while it heats. · Prices: Pörssisähkö.net (Nord Pool day-ahead, Finland).</div></footer>
+
+<script>
+(function(){
+const TZ='Europe/Helsinki';
+const SOURCES=[
+  'https://api.porssisahko.net/v1/latest-prices.json',
+  'https://raw.githubusercontent.com/Ramisa13/SteamFox/main/data/prices.json',
+  'data/prices.json'
+];
+const PATTERNS={ // expected visitors per hour as % of capacity
+  public:[0,0,0,0,0,0,10,15,15,10,10,15,20,15,10,15,35,60,90,85,45,15,10,0],
+  hotel:[0,0,0,0,0,0,5,10,10,5,5,5,5,5,5,5,10,25,45,70,85,80,50,10],
+  spa:[0,0,0,0,0,0,20,30,35,40,40,45,50,50,45,45,50,55,60,60,50,35,20,0]
+};
+const $=id=>document.getElementById(id);
+const fmtE=v=>'€'+v.toFixed(2), fmtK=v=>Math.round(v).toLocaleString('en-GB')+' kWh';
+const partsF=new Intl.DateTimeFormat('en-GB',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+function hel(d){const o={};partsF.formatToParts(d).forEach(p=>o[p.type]=p.value);return {date:`${o.year}-${o.month}-${o.day}`,min:(+o.hour)*60+(+o.minute)}}
+const dayName=new Intl.DateTimeFormat('en-GB',{timeZone:TZ,weekday:'short',day:'numeric',month:'short'});
+
+let data=null, days={}, live=false, view='today', dayKeys=[];
+
+async function getJSON(u){const c=new AbortController();const t=setTimeout(()=>c.abort(),5000);
+  try{const r=await fetch(u+(u.startsWith('http')?'':'?v='+Date.now()),{signal:c.signal,cache:'no-store'});if(!r.ok)throw 0;return await r.json()}finally{clearTimeout(t)}}
+async function load(){
+  for(const u of SOURCES){try{const j=await getJSON(u);const prices=(j.prices||[]).map(p=>({start:p.start||p.startDate,end:p.end||p.endDate,price:+p.price}));
+      if(prices.length){data={prices,sample:!!j.sample,fetched:j.fetched_at||new Date().toISOString(),src:u};break}}catch(e){}}
+  if(!data){$('statusText').textContent='Prices unavailable right now';return}
+  // split into Helsinki days of 96 quarter-hour slots
+  data.prices.forEach(p=>{const s=new Date(p.start),e=new Date(p.end);for(let t=s.getTime();t<e.getTime();t+=15*60000){const h=hel(new Date(t));(days[h.date]=days[h.date]||new Array(96).fill(null))[Math.floor(h.min/15)]=p.price}});
+  Object.values(days).forEach(a=>{for(let i=0;i<96;i++)if(a[i]==null)a[i]=a[i-1]??a.find(x=>x!=null)});
+  dayKeys=Object.keys(days).filter(k=>days[k].filter(x=>x!=null).length>=88).sort();
+  live=!data.sample;
+  setup();
+}
+function setup(){
+  const today=hel(new Date()).date, tmr=hel(new Date(Date.now()+864e5)).date;
+  const hasToday=days[today]&&dayKeys.includes(today), hasTmr=days[tmr]&&dayKeys.includes(tmr);
+  $('btnTomorrow').disabled=!hasTmr;
+  if(!hasToday){view='latest';live=false}
+  const dot=$('dot');dot.classList.toggle('sample',!live);
+  const fetched=new Date(data.fetched);
+  $('statusText').textContent=live?`Live prices · updated ${dayName.format(fetched)} ${String(hel(fetched).min/60|0).padStart(2,'0')}:${String(hel(fetched).min%60).padStart(2,'0')}`:'Sample day · real prices from 8 Oct 2026';
+  if(!live){const n=$('notice');n.hidden=false;n.textContent=data.sample?'Showing a real price day from 8 October 2026. Live prices appear here automatically once the daily price update has run.':'Today\'s prices are not available yet, so this shows the most recent day with prices.'}
+  if(!hasTmr&&live)$('btnTomorrow').title='Tomorrow\'s prices are published early afternoon';
+  calc();setInterval(()=>{if(view==='today'&&live)calc()},60000);
+}
+function key(){const today=hel(new Date()).date;if(view==='today'&&days[today])return today;if(view==='tomorrow')return hel(new Date(Date.now()+864e5)).date;return dayKeys[dayKeys.length-1]}
+
+function model(price,kw,open,close,pat){
+  const occ=i=>PATTERNS[pat][Math.floor(i/4)];
+  const o=open*4,c=close*4,base=new Array(96).fill(0),sf=new Array(96).fill(0),mode=new Array(96).fill('off');
+  for(let i=o-4;i<o;i++)base[i]=1; for(let i=o;i<c;i++)base[i]=0.6;
+  // SteamFox warm-up: cheapest 1 h window starting 1–2 h before opening, then hold at 35%
+  let best=null;
+  for(let s=o-8;s<=o-4;s++){if(s<0)continue;let cost=0;for(let i=s;i<s+4;i++)cost+=price[i];for(let i=s+4;i<o;i++)cost+=price[i]*0.35;if(!best||cost<best.cost)best={s,cost}}
+  for(let i=best.s;i<best.s+4;i++){sf[i]=1;mode[i]='warm'} for(let i=best.s+4;i<o;i++){sf[i]=0.35;mode[i]='hold'}
+  const open_=price.slice(o,c).slice().sort((a,b)=>a-b),med=open_[Math.floor(open_.length/2)];
+  for(let i=o;i<c;i++){const quiet=occ(i)<=15,pricey=price[i]>=med;if(quiet&&pricey){sf[i]=0.4;mode[i]='eco'}else{sf[i]=0.6;mode[i]='open'}}
+  for(let i=o;i<c-1;i++){if(mode[i]==='eco'&&mode[i+1]!=='eco'){sf[i]=1;mode[i]='reheat'}}
+  const slot=(f,i)=>kw*f*0.25, eur=(f,i)=>slot(f,i)*price[i]/100;
+  let bk=0,be=0,sk=0,se=0;for(let i=0;i<96;i++){bk+=slot(base[i]);be+=eur(base[i],i);sk+=slot(sf[i]);se+=eur(sf[i],i)}
+  return {base,sf,mode,bk,be,sk,se,eur,slot};
+}
+function calc(){
+  const k=key(),price=days[k];if(!price)return;
+  const kw=+$('kw').value,open=+$('open').value,close=+$('close').value,pat=$('pattern').value;
+  const m=model(price,kw,open,close,pat);
+  const savedE=m.be-m.se,savedK=m.bk-m.sk;
+  const now=hel(new Date()),isToday=k===now.date;
+  let soFar=0;if(isToday){const lim=Math.floor(now.min/15);for(let i=0;i<lim;i++)soFar+=m.eur(m.base[i],i)-m.eur(m.sf[i],i)}
+  $('dayLabel').textContent=isToday?'today':dayName.format(new Date(k+'T12:00:00'));
+  $('headline').textContent=isToday?'Saved so far today':(view==='tomorrow'?'Planned saving tomorrow':`Saved on ${dayName.format(new Date(k+'T12:00:00'))}`);
+  $('bigSaved').textContent=fmtE(isToday?soFar:savedE);
+  $('subline').textContent=`An example ${kw} kW sauna open ${String(open).padStart(2,'0')}–${close}, heated by SteamFox instead of a fixed timetable.`;
+  $('kpiKwh').textContent=fmtK(savedK);$('kpiEur').textContent=fmtE(savedE);$('kpiPct').textContent=(m.be>0?Math.round(savedE/m.be*100):0)+'%';
+  $('monthEur').textContent='€'+Math.round(savedE*30).toLocaleString('en-GB');$('monthKwh').textContent=fmtK(savedK*30);
+  // reasons: group consecutive eco/reheat blocks and the moved warm-up
+  const R=[];let i=0;const t=s=>`${String(Math.floor(s/4)).padStart(2,'0')}:${String(s%4*15).padStart(2,'0')}`;
+  while(i<96){const md=m.mode[i];if(md==='eco'||md==='warm'||md==='hold'){let j=i;const grp=md==='eco'?['eco','reheat']:['warm','hold'];while(j<96&&grp.includes(m.mode[j]))j++;
+      let s=0;for(let x=i;x<j;x++)s+=m.eur(m.base[x],x)-m.eur(m.sf[x],x);
+      R.push({from:t(i),to:t(j),label:md==='eco'?'Eco standby: quiet and expensive':'Warm-up moved to cheaper power',v:s});i=j}else i++}
+  $('reasons').innerHTML=R.filter(r=>Math.abs(r.v)>=0.005).sort((a,b)=>b.v-a.v).slice(0,5).map(r=>`<li><span class="t">${r.from}–${r.to}</span><span>${r.label}</span><span class="v">${r.v>=0?'+':'−'}${fmtE(Math.abs(r.v))}</span></li>`).join('')||'<li><span class="t">–</span><span>Prices are flat today, so the saving comes mostly from quiet hours.</span><span class="v"></span></li>';
+  draw(price,m,isToday?now.min:null);
+}
+function draw(price,m,nowMin){
+  const W=1000,H=360,L=44,R=44,T=14,B=30,cw=(W-L-R)/96,ph=150,py=T,gy=T+ph+24,gh=H-B-gy;
+  const maxP=Math.max(10,Math.ceil(Math.max(...price)/5)*5),sorted=price.slice().sort((a,b)=>a-b),hi=sorted[Math.floor(96*0.8)];
+  const css=getComputedStyle(document.documentElement),c=v=>css.getPropertyValue(v).trim();
+  let s='';
+  for(let v=0;v<=maxP;v+=maxP/2){const y=py+ph-v/maxP*ph;s+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="${c('--grid')}"/><text x="${L-6}" y="${y+4}" text-anchor="end">${v}</text>`}
+  s+=`<text x="${L}" y="${py+10}" dx="4" style="fill:${c('--muted')}">c/kWh</text>`;
+  m.mode.forEach((md,i)=>{if(md==='eco')s+=`<rect x="${L+i*cw}" y="${py}" width="${cw}" height="${ph}" fill="${c('--eco')}"/>`});
+  price.forEach((p,i)=>{const h=Math.max(0,p)/maxP*ph;s+=`<rect x="${L+i*cw+0.6}" y="${py+ph-h}" width="${cw-1.2}" height="${h}" fill="${p>=hi?c('--bar-peak'):c('--bar')}"/>`});
+  // power panel
+  const kwScale=f=>gy+gh-f*gh;
+  for(const f of [0,0.5,1]){const y=kwScale(f);s+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="${c('--grid')}"/><text x="${W-R+6}" y="${y+4}">${Math.round(f*100)}%</text>`}
+  s+=`<text x="${W-R}" y="${gy-6}" text-anchor="end" style="fill:${c('--muted')}">heater power</text>`;
+  let area='',bl='',sl='';
+  for(let i=0;i<96;i++){const x0=L+i*cw,x1=x0+cw,yb=kwScale(m.base[i]),ys=kwScale(m.sf[i]);
+    if(m.base[i]>m.sf[i])area+=`<rect x="${x0}" y="${yb}" width="${cw}" height="${ys-yb}" fill="${c('--save-soft')}"/>`;
+    bl+=`${i?'L':'M'}${x0},${yb}L${x1},${yb}`;sl+=`${i?'L':'M'}${x0},${ys}L${x1},${ys}`}
+  s+=area+`<path d="${bl}" fill="none" stroke="${c('--base')}" stroke-width="2.5" stroke-dasharray="6 4"/><path d="${sl}" fill="none" stroke="${c('--accent')}" stroke-width="2.5"/>`;
+  for(let h=0;h<=24;h+=3){const x=L+h*4*cw;s+=`<text x="${x}" y="${H-10}" text-anchor="middle">${String(h).padStart(2,'0')}:00</text>`}
+  if(nowMin!=null){const x=L+nowMin/15*cw;s+=`<line x1="${x}" x2="${x}" y1="${py}" y2="${gy+gh}" stroke="${c('--ink')}" stroke-width="1.5"/><text x="${x+4}" y="${py+22}" style="fill:${c('--ink')};font-weight:600">now</text>`}
+  $('chart').innerHTML=s;
+}
+// controls
+for(let h=4;h<=12;h++)$('open').insertAdjacentHTML('beforeend',`<option value="${h}" ${h===6?'selected':''}>${String(h).padStart(2,'0')}:00</option>`);
+for(let h=16;h<=23;h++)$('close').insertAdjacentHTML('beforeend',`<option value="${h}" ${h===22?'selected':''}>${h}:00</option>`);
+$('kw').addEventListener('input',()=>{$('kwOut').textContent=$('kw').value+' kW';calc()});
+['open','close','pattern'].forEach(id=>$(id).addEventListener('change',calc));
+$('btnToday').addEventListener('click',()=>{view='today';$('btnToday').setAttribute('aria-pressed','true');$('btnTomorrow').setAttribute('aria-pressed','false');calc()});
+$('btnTomorrow').addEventListener('click',()=>{view='tomorrow';$('btnTomorrow').setAttribute('aria-pressed','true');$('btnToday').setAttribute('aria-pressed','false');calc()});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',calc);
+load();
+})();
+</script>
+</body>
+</html>
