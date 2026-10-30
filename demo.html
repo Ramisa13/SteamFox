@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>SteamFox Operator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: control rail + one wide price/heater chart, with hour detail, bather view, event log and data sources below it */
+:root{
+  --bg:#EDF0F2; --panel:#FFFFFF; --ink:#1B2329; --muted:#56636D; --line:#D3DAE0;
+  --heat:#C9531F; --heat-soft:#F1C3A8; --cool:#1F5F8B; --cool-soft:#BFD7E8; --mid:#9AA7B1;
+  --good:#1E7A4F; --good-bg:#DDEFE5; --band:#E3E8EC; --warn:#9A3412; --alert-bg:#FDF1DC; --alert-line:#EBC98A; --alert-ink:#6B3E06;
+  --f-display:'Familjen Grotesk', 'Arial Narrow', Arial, sans-serif;
+  --f-body:'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+  --f-data:'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12171B; --panel:#1B2227; --ink:#E6ECEF; --muted:#9AA8B2; --line:#2E3940;
+  --heat:#F07A43; --heat-soft:#6B3420; --cool:#6FB0DE; --cool-soft:#22465F; --mid:#5F6E78;
+  --good:#5CC98F; --good-bg:#183A29; --band:#222B31; --warn:#F59E6B; --alert-bg:#3A2A10; --alert-line:#6B4A16; --alert-ink:#F5D49A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171B; --panel:#1B2227; --ink:#E6ECEF; --muted:#9AA8B2; --line:#2E3940;
+  --heat:#F07A43; --heat-soft:#6B3420; --cool:#6FB0DE; --cool-soft:#22465F; --mid:#5F6E78;
+  --good:#5CC98F; --good-bg:#183A29; --band:#222B31; --warn:#F59E6B; --alert-bg:#3A2A10; --alert-line:#6B4A16; --alert-ink:#F5D49A; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:20px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
+h1{font-family:var(--f-display);font-size:30px;font-weight:700;margin:0;letter-spacing:-.01em}
+h1 span{color:var(--heat)}
+.sub{color:var(--muted);margin:2px 0 0;font-size:15px}
+.tag{font-family:var(--f-data);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:3px 8px}
+.tag.live{color:var(--good);border-color:var(--good)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px;min-width:0}
+h2{font-family:var(--f-display);font-size:18px;margin:0 0 10px;font-weight:700}
+.label{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.num{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:8px;background:var(--panel);border:1px solid var(--line)}
+.kpi .v{font-family:var(--f-data);font-size:26px;font-weight:600}
+.kpi.save{background:var(--good-bg);border-color:transparent}
+.kpi.save .v{color:var(--good)}
+.kpi small{color:var(--muted);font-size:13px}
+.main{display:grid;grid-template-columns:290px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.main{grid-template-columns:minmax(0,1fr)}}
+.controls{display:flex;flex-direction:column;gap:16px}
+.field{display:flex;flex-direction:column;gap:6px}
+fieldset{border:1px solid var(--line);border-radius:8px;padding:12px;margin:0;display:flex;flex-direction:column;gap:10px}
+legend{padding:0 4px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button,.btn{font:inherit;font-size:14px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.seg button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--cool);outline-offset:2px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.row input[type=number]{width:84px}
+input[type=range]{width:100%;accent-color:var(--heat)}
+select,input[type=number],textarea{font:inherit;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+input[type=number]{font-family:var(--f-data);font-size:14px}
+textarea{width:100%;min-height:90px;font-family:var(--f-data);font-size:12px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.chart-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.chartbox{overflow-x:auto}
+svg{display:block;width:100%;min-width:560px;height:auto}
+svg text{font-family:var(--f-data);font-size:11px;fill:var(--muted)}
+svg .rowlbl{font-family:var(--f-body);font-size:12px;font-weight:700;fill:var(--ink)}
+.b-cheap{fill:var(--cool)} .b-norm{fill:var(--mid)} .b-spike{fill:var(--heat)}
+.band{fill:var(--band)} .grid{stroke:var(--line);stroke-width:1}
+.c-heat{fill:var(--heat)} .c-cool{fill:var(--cool)} .c-off{fill:var(--band)}
+.sel{fill:none;stroke:var(--ink);stroke-width:1.5}
+.hit{fill:transparent;cursor:pointer}
+.detail{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin:0}
+.stats dt{font-size:13px;color:var(--muted)} .stats dd{margin:0;font-family:var(--f-data);font-size:17px;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px}
+.p-heat{background:var(--heat-soft);color:var(--ink)} .p-cool{background:var(--cool-soft);color:var(--ink)} .p-off{background:var(--band);color:var(--muted)}
+.phone{border:1px solid var(--line);border-radius:18px;padding:14px;max-width:320px}
+.phone .name{font-weight:700;font-size:16px}
+.phone .big{font-family:var(--f-data);font-size:22px}
+.offer{margin-top:8px;font-size:14px;font-weight:600;color:var(--heat)}
+ol.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+ol.log li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;font-size:15px}
+ol.log time{font-family:var(--f-data);color:var(--muted)}
+.sources{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.srclist{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:15px}
+.srclist code{font-family:var(--f-data);font-size:12px;word-break:break-all}
+a{color:var(--cool)}
+.err{color:var(--warn);font-size:14px;margin:0}
+.ok{color:var(--good);font-size:14px;margin:0}
+footer{font-size:13px;color:var(--muted)}
+.alert{display:flex;flex-direction:column;gap:12px;background:var(--alert-bg);border:1px solid var(--alert-line);border-left:6px solid var(--heat);border-radius:0;padding:14px 18px;color:var(--ink)}
+.alert-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.alert h2{margin:0;color:var(--alert-ink);font-size:18px}
+.msgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.msg{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.msg .when{font-family:var(--f-data);font-size:12px;color:var(--muted)}
+.msg p{margin:0;font-size:15px}
+.recs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.rec{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-top:4px solid var(--cool);border-radius:0 0 8px 8px;padding:14px;min-width:0}
+.rec.r-plan{border-top-color:var(--good)} .rec.r-busy{border-top-color:var(--heat)} .rec.r-idle{border-top-color:var(--line)}
+.rec-text{margin:0;font-size:15px}
+.rec-actions{display:flex;flex-wrap:wrap;gap:8px}
+.rec .ok:empty{display:none}
+.thr{stroke:var(--heat);stroke-width:1.5;stroke-dasharray:5 4}
+.thrlbl{fill:var(--heat)!important}
+</style>
+
+<div class="wrap">
+<header>
+  <div>
+    <h1>Steam<span>Fox</span> operator</h1>
+    <p class="sub" id="siteSub"></p>
+  </div>
+  <span class="tag" id="dataTag">Real prices</span>
+</header>
+
+<section class="alert" id="alertBox" aria-live="polite" hidden>
+  <div class="alert-top">
+    <h2 id="alertHead">Peak price alert</h2>
+    <button type="button" class="btn" id="alertDismiss">Dismiss</button>
+  </div>
+  <p class="hint" style="margin:0" id="alertSummary"></p>
+  <div class="msgs">
+    <div class="msg"><span class="when" id="msg1When"></span><p id="msg1"></p></div>
+    <div class="msg"><span class="when" id="msg2When"></span><p id="msg2"></p></div>
+  </div>
+  <p class="hint" style="margin:0">Notification preview. In the live service these go to the operator by SMS, email or web push.</p>
+</section>
+
+<section class="kpis" aria-label="Result for the selected day">
+  <div class="kpi"><span class="label">Fixed timetable</span><span class="v num" id="kBase">€0</span><small>energy, transfer and tax</small></div>
+  <div class="kpi"><span class="label">With SteamFox</span><span class="v num" id="kSmart">€0</span><small>same opening hours</small></div>
+  <div class="kpi save"><span class="label">Saved this day</span><span class="v num" id="kSave">€0</span><small id="kPct">0% less</small></div>
+  <div class="kpi"><span class="label">A month like this</span><span class="v num" id="kMonth">€0</span><small id="kSub">vs €29 subscription</small></div>
+</section>
+
+<div class="main">
+  <aside class="panel controls" aria-label="Settings">
+    <div class="field">
+      <label class="label" for="venue">Sauna site</label>
+      <select id="venue">
+        <option value="beach">Public beach sauna · 24 kW</option>
+        <option value="raft">Riverside raft sauna · 18 kW</option>
+        <option value="hotel">Hotel guest sauna · 30 kW</option>
+        <option value="village">Holiday village sauna · 15 kW</option>
+      </select>
+      <p class="hint">Example site types around Oulu. Choosing one sets its heater, hours and capacity.</p>
+    </div>
+    <div class="field">
+      <label class="label" for="day">Price day</label>
+      <select id="day"></select>
+      <p class="hint" id="dayNote"></p>
+    </div>
+    <div class="field">
+      <span class="label">Mode</span>
+      <div class="seg" id="mode" role="group" aria-label="Mode">
+        <button type="button" data-v="advisory">Advisory</button>
+        <button type="button" data-v="auto">Autopilot</button>
+        <button type="button" data-v="manual">Off</button>
+      </div>
+      <p class="hint" id="modeHint"></p>
+    </div>
+    <div class="field">
+      <div class="row"><label class="label" for="alertThr">Peak alert above</label><span class="num" id="alertThrV"></span></div>
+      <input type="range" id="alertThr" min="5" max="40" step="1">
+      <p class="hint">The operator is warned the day before, and again 15 minutes before, when the spot price passes this level.</p>
+    </div>
+    <div class="field">
+      <div class="row"><label class="label" for="kw">Heater power</label><span class="num" id="kwV"></span></div>
+      <input type="range" id="kw" min="12" max="36" step="1">
+    </div>
+    <div class="field">
+      <span class="label">Opening hours</span>
+      <div class="row">
+        <select id="open" aria-label="Opens at"></select>
+        <span class="hint">to</span>
+        <select id="close" aria-label="Closes at"></select>
+      </div>
+    </div>
+    <div class="field">
+      <div class="row"><label class="label" for="target">Target temperature</label><span class="num" id="targetV"></span></div>
+      <input type="range" id="target" min="70" max="95" step="1">
+    </div>
+    <div class="field">
+      <div class="row"><label class="label" for="minT">Minimum in quiet hours</label><span class="num" id="minTV"></span></div>
+      <input type="range" id="minT" min="55" max="80" step="1">
+    </div>
+    <fieldset>
+      <legend class="label">Electricity bill, c/kWh</legend>
+      <div class="field">
+        <label class="label" for="grid">Network tariff</label>
+        <select id="grid">
+          <option value="oe_tou">Oulun Energia · Time-of-use (aikasähkö)</option>
+          <option value="oe_general">Oulun Energia · Standard (yleissähkö)</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="label" for="contract">Contract</label>
+        <select id="contract">
+          <option value="spot">Spot price (pörssisähkö)</option>
+          <option value="fixed">Fixed price</option>
+        </select>
+      </div>
+      <div class="row" id="marginRow"><label for="margin">Seller margin</label><input type="number" id="margin" min="0" max="10" step="0.01"></div>
+      <div class="row" id="fixedRow" hidden><label for="fixed">Fixed energy price</label><input type="number" id="fixed" min="0" max="60" step="0.01"></div>
+      <div class="row"><label for="tday">Transfer, day 07–22</label><input type="number" id="tday" min="0" max="20" step="0.01"></div>
+      <div class="row"><label for="tnight">Transfer, night 22–07</label><input type="number" id="tnight" min="0" max="20" step="0.01"></div>
+      <div class="row"><label for="tax">Electricity tax, class I</label><input type="number" id="tax" min="0" max="10" step="0.01"></div>
+      <label class="row" style="justify-content:flex-start;gap:8px"><input type="checkbox" id="vat"> Show costs without VAT (business)</label>
+      <p class="hint">Oulun Energia transfer prices from its <a href="https://www.oulunenergia.fi/en/electricity-network/products-and-price-lists/network-service-price-list/" target="_blank" rel="noopener">network service price list</a>, incl. 25.5% VAT. Electricity tax class I is 2.92 c/kWh incl. VAT and the security of supply charge, from 1 April 2026. The seller margin is an example: use your own contract. Sites on a power tariff (fuses over 63 A) also pay a monthly fee per peak kW, not shown here.</p>
+    </fieldset>
+    <p class="hint">The owner sets these limits. SteamFox only moves heating inside them.</p>
+  </aside>
+
+  <section class="panel" aria-label="Price and heater plan">
+    <div class="chart-head">
+      <h2 id="chartTitle">Spot price and heater plan</h2>
+      <div class="legend">
+        <span><i style="background:var(--cool)"></i>Cheap hour</span>
+        <span><i style="background:var(--mid)"></i>Normal</span>
+        <span><i style="background:var(--heat)"></i>Price spike</span>
+        <span><i style="background:var(--band)"></i>Open hours</span>
+      </div>
+    </div>
+    <div class="chartbox"><svg id="chart" viewBox="0 0 960 330" role="img" aria-label="Hourly spot price and heater power, fixed timetable versus SteamFox"></svg></div>
+    <div class="field" style="margin-top:12px">
+      <div class="row"><label class="label" for="hour">Look at hour</label><span class="num" id="hourV"></span></div>
+      <input type="range" id="hour" min="0" max="23" step="1">
+    </div>
+  </section>
+</div>
+
+<section class="panel" aria-label="Recommendations">
+  <div class="chart-head"><h2 id="recTitle">Recommendations</h2><span class="hint" id="recSub"></span></div>
+  <div class="recs">
+    <article class="rec" id="rec1">
+      <span class="label">Tomorrow's heating plan · sent at 14:15</span>
+      <p class="rec-text" id="rec1Text"></p>
+      <div class="rec-actions" id="rec1Act"></div>
+      <p class="ok" id="rec1Msg" role="status"></p>
+    </article>
+    <article class="rec" id="rec2">
+      <span class="label" id="rec2Label">Quiet sauna</span>
+      <p class="rec-text" id="rec2Text"></p>
+      <div class="rec-actions" id="rec2Act"></div>
+      <p class="ok" id="rec2Msg" role="status"></p>
+    </article>
+    <article class="rec" id="rec3">
+      <span class="label" id="rec3Label">Busy sauna</span>
+      <p class="rec-text" id="rec3Text"></p>
+      <div class="rec-actions" id="rec3Act"></div>
+      <p class="ok" id="rec3Msg" role="status"></p>
+    </article>
+  </div>
+</section>
+
+<div class="detail">
+  <section class="panel" aria-label="Selected hour">
+    <h2 id="dTitle"></h2>
+    <p style="margin:0 0 12px"><span class="pill" id="dPill"></span></p>
+    <dl class="stats">
+      <div><dt>Spot price (Finland)</dt><dd id="dPrice"></dd></div>
+      <div><dt>Full price with fees</dt><dd id="dTotal"></dd></div>
+      <div><dt>Heater, fixed timetable</dt><dd id="dBase"></dd></div>
+      <div><dt>Heater, SteamFox</dt><dd id="dSmart"></dd></div>
+      <div><dt>Room temperature</dt><dd id="dTemp"></dd></div>
+      <div><dt>Visitors (door counter)</dt><dd id="dOcc"></dd></div>
+    </dl>
+  </section>
+  <section class="panel" aria-label="What bathers see">
+    <h2>What bathers see on the live map</h2>
+    <div class="phone">
+      <div class="name" id="mName"></div>
+      <div class="big" id="mStatus"></div>
+      <div class="hint" id="mSub"></div>
+      <div class="offer" id="mOffer" hidden>Quiet Hours: 25% off for the next 90 minutes</div>
+    </div>
+    <p class="hint" style="margin-top:10px">Opened from a QR code or web link. No app to download.</p>
+  </section>
+  <section class="panel" aria-label="What SteamFox does">
+    <h2 id="logTitle">What SteamFox does that day</h2>
+    <ol class="log" id="log"></ol>
+  </section>
+</div>
+
+<div class="sources">
+  <section class="panel" aria-label="Data sources">
+    <h2>Where the data comes from</h2>
+    <ol class="srclist">
+      <li><b>Spot prices:</b> <a href="https://porssisahko.net/" target="_blank" rel="noopener">Pörssisähkö.net</a> free API, Finnish prices in c/kWh with VAT: <code>api.porssisahko.net/v1/latest-prices.json</code>. Tomorrow's prices appear each afternoon after the auction.</li>
+      <li><b>Backup price sources:</b> <a href="https://sahkotin.fi/" target="_blank" rel="noopener">Sähkötin</a> (<code>api.sahkotin.fi/prices</code>) and the <a href="https://transparency.entsoe.eu/" target="_blank" rel="noopener">ENTSO-E Transparency Platform</a> (Finland zone <code>10YFI-1--------U</code>, free token).</li>
+      <li><b>Market source:</b> <a href="https://www.nordpoolgroup.com/" target="_blank" rel="noopener">Nord Pool</a> day-ahead auction, where the prices are set.</li>
+      <li><b>Transfer fees:</b> the sauna's network operator, such as <a href="https://www.oulunenergia.fi/" target="_blank" rel="noopener">Oulun Energia</a>, Caruna, Elenia or Helen Sähköverkko. The live service stores each operator's published price list.</li>
+      <li><b>History and testing:</b> <a href="https://data.fingrid.fi/" target="_blank" rel="noopener">Fingrid open data</a> for past prices and grid reserve markets.</li>
+    </ol>
+    <p class="hint" style="margin-top:10px">In the live service, the SteamFox server fetches these every day and plans the heater. This demo has two real days built in, fetched from Pörssisähkö.net on 9 October 2026.</p>
+  </section>
+  <section class="panel" aria-label="Load the latest prices">
+    <h2>Load the latest prices</h2>
+    <p class="hint">This page can't contact other websites itself, so you can paste the data in:</p>
+    <ol class="srclist" style="margin-top:8px">
+      <li>Open <a href="https://api.porssisahko.net/v1/latest-prices.json" target="_blank" rel="noopener">the Pörssisähkö.net price feed</a>.</li>
+      <li>Select all the text and copy it.</li>
+      <li>Paste it below and press Load prices.</li>
+    </ol>
+    <label class="label" for="paste" style="display:block;margin:10px 0 6px">Price data</label>
+    <textarea id="paste" placeholder='{"prices":[{"price":2.264,"startDate":"2026-10-09T21:00:00.000Z", ...}]}'></textarea>
+    <div class="row" style="margin-top:8px;justify-content:flex-start"><button type="button" class="btn primary" id="loadBtn">Load prices</button></div>
+    <p id="pasteMsg" class="hint" role="status" style="margin-top:8px"></p>
+  </section>
+</div>
+
+<footer>Spot prices include 25.5% VAT, as published; VAT-registered businesses reclaim the VAT (tick "Show costs without VAT"). Site types, heater sizes, opening hours and visitor numbers are examples, not real customers. Heater cycling is simplified: about 60% average power while open after warm-up, 35% to hold heat before opening, 40% in eco mode. The live service controls the heater through its existing contactor, installed by an electrician.</footer>
+</div>
+
+<script>
+(function(){
+  var BUILTIN = [
+    {id:'2026-10-08', label:'Wed 8 Oct 2026 (real)', real:true,
+     note:'Real Finnish spot prices from Pörssisähkö.net. A morning spike up to 22.8 c/kWh. The 00:00 hour was not in the feed.',
+     p:[null,4.26,4.429,4.516,5.113,7.366,13.191,17.87,20.622,22.774,20.712,18.265,16.642,15.291,15.075,14.313,15.357,17.133,15.939,15.06,12.053,10.14,8.215,4.373]},
+    {id:'2026-10-09', label:'Thu 9 Oct 2026 (real)', real:true,
+     note:'Real Finnish spot prices from Pörssisähkö.net. A cheap, flat day: little to gain from moving heat.',
+     p:[3.413,3.051,2.482,1.943,1.693,1.653,1.881,2.224,2.789,3.15,3.072,2.727,2.31,2.288,2.275,2.384,2.856,3.284,3.28,3.137,2.647,2.492,2.51,2.593]},
+    {id:'sample-spike', label:'Winter spike day (sample)', real:false,
+     note:'An invented winter day with evening spikes, for illustration only.',
+     p:[7.0,6.2,5.8,5.5,5.9,7.4,12.5,21.8,26.4,19.5,14.2,11.0,9.3,7.2,5.1,4.9,10.8,23.4,31.6,24.9,16.8,12.1,9.4,7.9]}
+  ];
+  var OCC = [0,0,0,0,0,0,10,15,15,15,15,20,25,20,15,15,35,60,90,85,45,15,10,0];
+  var VENUES = {
+    beach:   {name:'Public beach sauna', sub:'Public winter-swimming sauna · 24 kW electric heater · example site', kw:24, open:6, close:22, cap:20, target:80, minT:65},
+    raft:    {name:'Riverside raft sauna', sub:'Floating sauna on the river · 18 kW electric heater · example site', kw:18, open:16, close:22, cap:16, target:82, minT:68},
+    hotel:   {name:'Hotel guest sauna', sub:'City hotel sauna for guests · 30 kW electric heater · example site', kw:30, open:17, close:23, cap:14, target:80, minT:70},
+    village: {name:'Holiday village sauna', sub:'Rental suite sauna at a holiday village · 15 kW electric heater · example site', kw:15, open:14, close:22, cap:10, target:78, minT:65}
+  };
+  var GRIDS = {
+    oe_tou:     {tday:2.69, tnight:1.63},
+    oe_general: {tday:3.18, tnight:3.18}
+  };
+  var TAX_I = 2.92, VAT = 1.255;
+  var CAP = 20, RUN = 0.6, HOLD = 0.35, ECO = 0.4, COAST = 0.42;
+  var DAYS = BUILTIN.slice();
+  var S = {venue:'beach', grid:'oe_tou', vatOff:false, day:'2026-10-08', mode:'advisory', contract:'spot', kw:24, open:6, close:22, target:80, minT:65, hour:9, alertThr:18,
+           margin:0.5, fixed:12, tday:2.69, tnight:1.63, tax:TAX_I};
+  try {
+    var saved = JSON.parse(localStorage.getItem('sn-op3') || 'null');
+    if (saved){ for (var k in saved.S) if (k in S) S[k] = saved.S[k]; if (Array.isArray(saved.pasted)) DAYS = BUILTIN.concat(saved.pasted); }
+  } catch(e) {}
+  if (S.mode==='smart') S.mode='advisory';
+  var PLAN = {advisory:19, auto:39, manual:19};
+  var acted = {};
+
+  var $ = function(id){ return document.getElementById(id); };
+  var pad = function(h){ return (h<10?'0':'') + h + ':00'; };
+  var eur = function(v){ return '€' + v.toFixed(2); };
+  var c1 = function(v){ return v==null ? 'no data' : v.toFixed(1) + ' c/kWh'; };
+  function DAY(){ for (var i=0;i<DAYS.length;i++) if (DAYS[i].id===S.day) return DAYS[i]; S.day = DAYS[0].id; return DAYS[0]; }
+  function night(h){ return h>=22 || h<7; }
+
+  function simulate(){
+    var P = DAY().p, T = [], base = [], smart = [], bt = [], st = [], h;
+    for (h=0; h<24; h++){
+      var energy = S.contract==='fixed' ? S.fixed : (P[h]==null ? null : P[h] + S.margin);
+      T[h] = energy==null ? null : (energy + (night(h) ? S.tnight : S.tday) + S.tax) / (S.vatOff ? VAT : 1);
+      base[h]=0; bt[h]='off';
+    }
+    if (S.open-1 >= 0){ base[S.open-1]=1; bt[S.open-1]='warm'; }
+    for (h=S.open; h<S.close; h++){ base[h]=RUN; bt[h]='run'; }
+    smart = base.slice(); st = bt.slice();
+    var known = P.filter(function(v){ return v!=null; });
+    var mean = known.reduce(function(a,b){return a+b;},0)/Math.max(1,known.length);
+    var thr = Math.max(mean*1.5, mean+5);
+    if (S.mode!=='manual'){
+      var w = S.open-1;
+      if (w >= 0 && T[w]!=null){
+        var best = {s:w, cost:T[w]};
+        for (var k2=2; k2<=4; k2++){
+          var s = S.open-k2; if (s<0 || T[s]==null) break;
+          var c = T[s], okk = true;
+          for (var j=s+1; j<S.open; j++){ if (T[j]==null){ okk=false; break; } c += HOLD*T[j]; }
+          if (okk && c < best.cost - 1e-9) best = {s:s, cost:c};
+        }
+        smart[w]=0; st[w]='off';
+        smart[best.s]=1; st[best.s]='warm';
+        for (j=best.s+1; j<S.open; j++){ smart[j]=HOLD; st[j]='hold'; }
+      }
+      for (h=S.open; h<S.close; h++) if (OCC[h] < 20){ smart[h]=ECO; st[h]='eco'; }
+      if (S.contract==='spot'){
+        var cand = [];
+        for (h=S.open; h<S.close; h++) if (P[h]!=null && P[h] >= thr && st[h]==='run') cand.push(h);
+        cand.sort(function(a,b){ return P[b]-P[a]; });
+        cand.slice(0,2).forEach(function(x){ smart[x]=COAST; st[x]='coast'; });
+        for (h=S.open; h<S.close-1; h++){
+          if (st[h]==='coast' && st[h+1]==='run'){ smart[h+1]=RUN+0.1; st[h+1]='recover'; }
+        }
+      }
+    }
+    var cb=0, cs=0, hb=[], hs=[];
+    for (h=0; h<24; h++){
+      hb[h] = base[h]>0 && T[h]!=null ? S.kw*base[h]*T[h]/100 : 0;
+      hs[h] = smart[h]>0 && T[h]!=null ? S.kw*smart[h]*T[h]/100 : 0;
+      cb+=hb[h]; cs+=hs[h];
+    }
+    return {P:P, T:T, base:base, smart:smart, bt:bt, st:st, mean:mean, thr:thr, cb:cb, cs:cs, hb:hb, hs:hs};
+  }
+
+  function temp(tag){
+    if (tag==='warm') return 'Heating up';
+    if (tag==='hold' || tag==='run' || tag==='recover') return S.target + '°C';
+    if (tag==='coast') return '≈' + (S.target-4) + '°C';
+    if (tag==='eco') return Math.max(S.minT, S.target-10) + '°C';
+    return 'Off';
+  }
+
+  function chart(R){
+    var W=960, L=46, Rp=14, top=16, pH=168, step=(W-L-Rp)/24;
+    var known = R.P.filter(function(v){ return v!=null; });
+    var max = Math.max.apply(null, known.length ? known : [1]);
+    var nice = max<=4?4:max<=5?5:max<=10?10:max<=20?20:max<=25?25:max<=30?30:Math.ceil(max/10)*10;
+    var y = function(v){ return top + pH - v/nice*pH; };
+    var out = [];
+    out.push('<rect class="band" x="'+(L+S.open*step)+'" y="'+top+'" width="'+((S.close-S.open)*step)+'" height="'+pH+'"/>');
+    [0, nice/2, nice].forEach(function(t){
+      out.push('<line class="grid" x1="'+L+'" x2="'+(W-Rp)+'" y1="'+y(t)+'" y2="'+y(t)+'"/>');
+      out.push('<text x="'+(L-6)+'" y="'+(y(t)+4)+'" text-anchor="end">'+t+'</text>');
+    });
+    out.push('<text x="'+L+'" y="'+(top-4)+'" text-anchor="start">spot c/kWh</text>');
+    if (S.contract==='spot' && S.alertThr <= nice){
+      out.push('<line class="thr" x1="'+L+'" x2="'+(W-Rp)+'" y1="'+y(S.alertThr)+'" y2="'+y(S.alertThr)+'"/>');
+      out.push('<text class="thrlbl" x="'+(W-Rp)+'" y="'+(y(S.alertThr)-5)+'" text-anchor="end">alert '+S.alertThr+'</text>');
+    }
+    for (var h=0; h<24; h++){
+      var p=R.P[h], bw=step*0.68, x=L+h*step+(step-bw)/2;
+      if (p==null){
+        out.push('<text x="'+(L+h*step+step/2)+'" y="'+(top+pH-4)+'" text-anchor="middle">–</text>');
+      } else {
+        var cls = p>=R.thr ? 'b-spike' : (p<=R.mean*0.7 ? 'b-cheap' : 'b-norm');
+        out.push('<rect class="'+cls+'" x="'+x+'" y="'+y(p)+'" width="'+bw+'" height="'+Math.max(1,top+pH-y(p))+'" rx="2"/>');
+      }
+      if (h%3===0) out.push('<text x="'+(L+h*step+step/2)+'" y="'+(top+pH+16)+'" text-anchor="middle">'+pad(h)+'</text>');
+    }
+    var rows=[['Fixed timetable',R.base,R.bt,226],['SteamFox',R.smart,R.st,282]];
+    rows.forEach(function(r){
+      out.push('<text class="rowlbl" x="'+L+'" y="'+(r[3]-8)+'">'+r[0]+' · heater power</text>');
+      for (var h=0; h<24; h++){
+        var d=r[1][h], tag=r[2][h];
+        var cls = d===0 ? 'c-off' : ((tag==='eco'||tag==='coast'||tag==='hold') ? 'c-cool' : 'c-heat');
+        var op = d===0 ? 1 : Math.max(0.25, d);
+        out.push('<rect class="'+cls+'" x="'+(L+h*step+1)+'" y="'+r[3]+'" width="'+(step-2)+'" height="26" rx="2" opacity="'+op.toFixed(2)+'"/>');
+      }
+    });
+    out.push('<rect class="sel" x="'+(L+S.hour*step)+'" y="'+(top-4)+'" width="'+step+'" height="'+(282+26-top+8)+'" rx="3"/>');
+    for (h=0; h<24; h++) out.push('<rect class="hit" data-h="'+h+'" x="'+(L+h*step)+'" y="0" width="'+step+'" height="330"><title>'+pad(h)+'</title></rect>');
+    $('chart').innerHTML = out.join('');
+  }
+
+  var TAGTXT = {warm:['Pre-heating','p-heat'], hold:['Holding heat','p-cool'], run:['Normal heat','p-heat'], recover:['Recovering heat','p-heat'], eco:['Eco mode','p-cool'], coast:['Riding out spike','p-cool'], off:['Heater off','p-off']};
+
+  function detail(R){
+    var h=S.hour, tag=R.st[h];
+    $('dTitle').textContent = pad(h) + ' to ' + pad((h+1)%24);
+    $('dPill').textContent = TAGTXT[tag][0]; $('dPill').className = 'pill ' + TAGTXT[tag][1];
+    $('dPrice').textContent = c1(R.P[h]);
+    $('dTotal').textContent = c1(R.T[h]) + (S.vatOff ? ' excl. VAT' : '');
+    $('dBase').textContent = Math.round(R.base[h]*100) + '% · ' + eur(R.hb[h]);
+    $('dSmart').textContent = Math.round(R.smart[h]*100) + '% · ' + eur(R.hs[h]);
+    $('dTemp').textContent = temp(tag);
+    var open = h>=S.open && h<S.close, n = Math.round(OCC[h]/100*CAP);
+    $('dOcc').textContent = open ? (n + ' of ' + CAP) : 'Closed';
+    if (!open){
+      $('mStatus').textContent = 'Closed';
+      $('mSub').textContent = 'Opens at ' + pad(S.open) + ' · ready at ' + S.target + '°C';
+      $('mOffer').hidden = true;
+    } else {
+      $('mStatus').textContent = temp(tag).replace('≈','') + ' · ' + n + ' of ' + CAP + ' places';
+      $('mSub').textContent = OCC[h] < 20 ? 'Very quiet right now' : OCC[h] >= 80 ? 'Busy right now' : 'Room on the benches';
+      $('mOffer').hidden = !(OCC[h] < 20 && S.mode!=='manual');
+    }
+  }
+
+  function log(R){
+    var items=[], h;
+    $('logTitle').textContent = S.mode==='advisory' ? 'Step-by-step plan for that day' : 'What SteamFox does that day';
+    if (S.mode==='manual') items = [[Math.max(0,S.open-1), 'SteamFox is off: the heater follows the fixed timetable. No savings this day.']];
+    else {
+      for (h=0; h<24; h++){
+        var t=R.st[h];
+        if (t==='warm') items.push([h, 'Pre-heat at full power, spot ' + c1(R.P[h]) + (h<S.open-1 ? ', ' + (S.open-1-h) + ' h earlier than the fixed timetable' : '') + '.']);
+        if (t==='hold' && R.st[h-1]!=='hold') items.push([h, 'Hold the heat at 35% until opening at ' + pad(S.open) + '.']);
+        if (t==='coast') items.push([h, 'Price spike ' + c1(R.P[h]) + ': ease the heater to 42%. Hot stones keep the room near ' + (S.target-4) + '°C.']);
+        if (t==='recover') items.push([h, 'Spike over: back to full heat.']);
+        if (t==='eco') items.push([h, 'Quiet hour (' + OCC[h] + '% full): eco mode at ' + Math.max(S.minT,S.target-10) + '°C and a Quiet Hours offer on the live map.']);
+      }
+      if (!items.length) items = [[S.open, 'No cheaper option inside your limits this day.']];
+      if (S.contract==='fixed') items.push([S.close-1, 'Fixed-price contract: savings come from eco mode only.']);
+    }
+    $('log').innerHTML = items.map(function(i){ return '<li><time>' + pad(i[0]) + '</time><span>' + i[1] + '</span></li>'; }).join('');
+  }
+
+  function btn(label, id, primary){ return '<button type="button" class="btn' + (primary?' primary':'') + '" data-act="' + id + '">' + label + '</button>'; }
+  function recs(R){
+    var d = DAY(), h = S.hour, open = h>=S.open && h<S.close, n = Math.round(OCC[h]/100*CAP);
+    var save = R.cb - R.cs, dayName = d.label.replace(/ \((real|sample|pasted)\)/,'');
+    var k = function(x){ return d.id + '|' + x + '|' + S.mode + '|' + (x==='plan' ? '' : h); };
+    $('recTitle').textContent = S.mode==='auto' ? 'Autopilot actions' : S.mode==='advisory' ? 'Recommendations' : 'Recommendations are off';
+    $('recSub').textContent = S.mode==='advisory' ? 'Advisory mode: the operator decides, the wall panel stays in charge' : S.mode==='auto' ? 'Autopilot: SteamFox switches the heater through its relay' : 'Turn on Advisory to get suggestions';
+    // 1. next-day plan
+    var w = R.st.indexOf('warm'), coast=[], eco=[];
+    for (var i=0;i<24;i++){ if (R.st[i]==='coast') coast.push(i); if (R.st[i]==='eco') eco.push(i); }
+    var steps = [];
+    if (w>=0) steps.push('pre-heat at ' + pad(w) + ' (' + c1(R.P[w]) + ')');
+    if (coast.length) steps.push('reduce heat during the spike at ' + ranges(coast));
+    if (eco.length) steps.push('use eco standby at ' + ranges(eco));
+    var t1;
+    if (S.mode==='manual'){
+      var sv = S.mode; S.mode='advisory'; var Ra = simulate(); S.mode = sv;
+      t1 = 'SteamFox is off. For ' + dayName + ', its plan would save about ' + eur(Ra.cb-Ra.cs) + '.';
+      $('rec1Act').innerHTML = '';
+    } else {
+      t1 = 'For ' + dayName + ': ' + (steps.length ? steps.join(', then ') : 'keep the normal timetable') + '. Estimated saving ' + eur(save) + ' that day.';
+      $('rec1Act').innerHTML = S.mode==='advisory' ? btn('Apply plan','plan',true) + btn('Not today','planNo') : btn('Pause autopilot for this day','planNo');
+    }
+    $('rec1Text').textContent = t1;
+    $('rec1').className = 'rec r-plan';
+    $('rec1Msg').textContent = acted[k('plan')] || '';
+    // 2. quiet / standby
+    var r2 = $('rec2');
+    if (S.mode!=='manual' && open && OCC[h] < 20){
+      var kwh = (RUN-ECO)*S.kw, eu = R.T[h]!=null ? kwh*R.T[h]/100 : 0;
+      $('rec2Label').textContent = 'Quiet sauna · now, ' + pad(h);
+      $('rec2Text').textContent = 'Only ' + n + ' of ' + CAP + ' places in use since ' + pad(h) + '. Drop to ' + Math.max(S.minT,S.target-10) + '°C eco standby to save about ' + kwh.toFixed(1) + ' kWh (' + eur(eu) + ') per hour.';
+      $('rec2Act').innerHTML = S.mode==='advisory' ? btn('Enter standby','idle',true) + btn('Ignore','idleNo') : '';
+      if (S.mode==='auto' && !acted[k('idle')]) acted[k('idle')] = 'Done automatically: eco standby is on.';
+      r2.className = 'rec';
+    } else {
+      $('rec2Label').textContent = 'Quiet sauna · now, ' + pad(h);
+      $('rec2Text').textContent = !open ? 'The sauna is closed at ' + pad(h) + '.' : S.mode==='manual' ? 'Standby suggestions are off.' : 'No standby needed: ' + n + ' of ' + CAP + ' places in use.';
+      $('rec2Act').innerHTML = '';
+      r2.className = 'rec r-idle';
+    }
+    $('rec2Msg').textContent = acted[k('idle')] || '';
+    // 3. busy / keep heat
+    var r3 = $('rec3');
+    if (S.mode!=='manual' && open && OCC[h] >= 80){
+      var doors = Math.round(OCC[h]/15);
+      $('rec3Label').textContent = 'Busy sauna · now, ' + pad(h);
+      $('rec3Text').textContent = doors + ' door openings in the last 10 minutes and the room is down to ' + (S.target-5) + '°C. Run the heater at full power until the rush passes to get back to ' + S.target + '°C.';
+      $('rec3Act').innerHTML = S.mode==='advisory' ? btn('Boost heat','busy',true) + btn('Ignore','busyNo') : '';
+      if (S.mode==='auto' && !acted[k('busy')]) acted[k('busy')] = 'Done automatically: full heat until the room recovers.';
+      r3.className = 'rec r-busy';
+    } else {
+      var best = -1;
+      for (i=S.open; i<S.close; i++) if (best<0 || OCC[i] > OCC[best]) best = i;
+      $('rec3Label').textContent = 'Busy sauna · forecast';
+      $('rec3Text').textContent = S.mode==='manual' ? 'Busy-hour suggestions are off.' : (best>=0 ? 'Busiest hour expected at ' + pad(best) + ' (' + OCC[best] + '% full). Be at ' + S.target + '°C by then.' : 'No opening hours set.');
+      $('rec3Act').innerHTML = '';
+      r3.className = 'rec r-idle';
+    }
+    $('rec3Msg').textContent = acted[k('busy')] || '';
+    recs.key = k;
+  }
+  var ACT = {
+    plan: S => S.mode==='auto' ? 'Scheduled on the relay.' : 'Plan applied. You will get a reminder before each step.',
+    planNo: S => S.mode==='auto' ? 'Autopilot paused for this day. The wall panel follows its own timetable.' : 'Plan skipped for this day.',
+    idle: () => 'Standby set. Remember to lower the wall panel to the eco temperature.',
+    idleNo: () => 'Ignored. Full heat stays on.',
+    busy: () => 'Boost set. Turn the wall panel to full power until the room recovers.',
+    busyNo: () => 'Ignored.'
+  };
+
+  var dismissed = {};
+  function ranges(hs){
+    var out=[], i=0;
+    while (i<hs.length){ var a=hs[i]; while (i+1<hs.length && hs[i+1]===hs[i]+1) i++; out.push(pad(a)+'–'+pad((hs[i]+1)%24)); i++; }
+    return out.join(', ');
+  }
+  function alerts(R){
+    var box=$('alertBox'), d=DAY(), key=d.id+'|'+S.alertThr+'|'+S.contract;
+    $('alertThrV').textContent = S.alertThr + ' c/kWh';
+    var hot=[]; for (var h=0; h<24; h++) if (R.P[h]!=null && R.P[h] >= S.alertThr) hot.push(h);
+    if (S.contract!=='spot' || !hot.length || dismissed[key]){ box.hidden = true; return; }
+    box.hidden = false;
+    var peak = hot.reduce(function(a,b){ return R.P[b]>R.P[a]?b:a; }, hot[0]);
+    var inOpen = hot.filter(function(h){ return h>=S.open && h<S.close; });
+    var dayName = d.label.replace(/ \((real|sample|pasted)\)/,'');
+    $('alertHead').textContent = 'Peak price alert: ' + hot.length + ' hour' + (hot.length>1?'s':'') + ' above ' + S.alertThr + ' c/kWh';
+    $('alertSummary').textContent = dayName + ': high prices at ' + ranges(hot) + ', peaking at ' + R.P[peak].toFixed(1) + ' c/kWh at ' + pad(peak) + '. ' +
+      (inOpen.length ? inOpen.length + ' of these hours fall inside your opening hours.' : 'None of them fall inside your opening hours.');
+    var plan;
+    if (S.mode==='manual'){
+      var saved = S.mode; S.mode='advisory'; var Rs = simulate(); S.mode=saved;
+      var could = Rs.cb - Rs.cs;
+      plan = 'SteamFox is off, so the heater follows the fixed timetable. Following its plan would save about ' + eur(could) + ' that day.';
+    } else {
+      var parts=[], w=R.st.indexOf('warm');
+      if (w>=0) parts.push('pre-heat at ' + pad(w) + ' (' + c1(R.P[w]) + ')');
+      var coast=[]; for (h=0; h<24; h++) if (R.st[h]==='coast') coast.push(h);
+      if (coast.length) parts.push('ease the heater at ' + ranges(coast));
+      var who = S.mode==='auto' ? 'SteamFox will ' : 'We recommend you ';
+      plan = parts.length ? who + parts.join(' and ') + '. Expected saving ' + eur(R.cb-R.cs) + '.' + (S.mode==='auto' ? ' Reply STOP to pause autopilot.' : ' Open the dashboard to apply the plan.') : 'No change to your heating plan is needed. Expected saving ' + eur(R.cb-R.cs) + '.';
+    }
+    $('msg1When').textContent = 'Day before, about 14:15 · after the Nord Pool auction';
+    $('msg1').textContent = 'Peak warning for ' + dayName + ': spot price up to ' + R.P[peak].toFixed(1) + ' c/kWh at ' + ranges(hot) + '. ' + plan;
+    if (inOpen.length){
+      var f = inOpen[0], tag = R.st[f], act;
+      if (S.mode==='manual') act = 'Your heater stays at normal power. Consider lowering the setpoint for this hour.';
+      else if (tag==='coast') act = 'The heater eases to 42%; hot stones keep the room near ' + (S.target-4) + '°C.';
+      else if (tag==='eco') act = 'The sauna is quiet, so it is already in eco mode at ' + Math.max(S.minT,S.target-10) + '°C.';
+      else act = 'Visitors are expected, so the heater stays on to hold ' + S.target + '°C.';
+      $('msg2When').textContent = 'Same day, ' + (f>0 ? pad(f-1).replace(':00',':45') : '23:45') + ' · 15 minutes before';
+      $('msg2').textContent = 'Peak hour in 15 minutes: spot price rises to ' + c1(R.P[f]) + ' at ' + pad(f) + '. ' + act;
+    } else {
+      $('msg2When').textContent = 'Same day';
+      $('msg2').textContent = 'No warning needed: the high-price hours are outside your opening hours.';
+    }
+  }
+
+  function fillDays(){
+    var sel = $('day'); sel.innerHTML = '';
+    DAYS.forEach(function(d){ var o=document.createElement('option'); o.value=d.id; o.textContent=d.label; sel.appendChild(o); });
+    sel.value = DAY().id;
+  }
+
+  function render(){
+    var V = VENUES[S.venue] || VENUES.beach; CAP = V.cap;
+    $('siteSub').textContent = V.sub;
+    $('mName').textContent = V.name;
+    var R = simulate(), save = R.cb - R.cs, d = DAY();
+    $('kBase').textContent = eur(R.cb);
+    $('kSmart').textContent = eur(R.cs);
+    $('kSave').textContent = eur(save);
+    $('kPct').textContent = (R.cb>0 ? Math.round(save/R.cb*100) : 0) + '% less';
+    $('kMonth').textContent = '€' + Math.round(save*30);
+    $('kSub').textContent = save*30 >= 29 ? ('covers the €29 plan ' + (save*30/29).toFixed(1) + '×') : 'below the €29 plan';
+    $('kwV').textContent = S.kw + ' kW';
+    $('targetV').textContent = S.target + '°C';
+    $('minTV').textContent = S.minT + '°C';
+    $('hourV').textContent = pad(S.hour);
+    $('dayNote').textContent = d.note;
+    $('dataTag').textContent = d.real ? 'Real prices' : 'Sample prices';
+    $('dataTag').className = 'tag' + (d.real ? ' live' : '');
+    $('chartTitle').textContent = 'Spot price and heater plan · ' + d.label.replace(/ \((real|sample|pasted)\)/,'');
+    $('marginRow').hidden = S.contract==='fixed';
+    $('fixedRow').hidden = S.contract!=='fixed';
+    Array.prototype.forEach.call($('mode').querySelectorAll('button'), function(b){ b.setAttribute('aria-pressed', String(b.dataset.v===S.mode)); });
+    chart(R); detail(R); log(R); alerts(R); recs(R);
+    $('modeHint').textContent = S.mode==='advisory' ? 'Advisory: SteamFox suggests, the operator acts. No wiring needed. €19/month.' : S.mode==='auto' ? 'Autopilot: SteamFox switches the heater through a relay fitted by an electrician. €39/month.' : 'Off: the heater follows the fixed timetable.';
+    $('kSub').textContent = (save*30 >= PLAN[S.mode] ? ('covers the €' + PLAN[S.mode] + ' plan ' + (save*30/PLAN[S.mode]).toFixed(1) + '×') : 'below the €' + PLAN[S.mode] + ' plan') + (S.vatOff ? ' · excl. VAT' : '');
+    $('kSmart').nextElementSibling.textContent = S.mode==='advisory' ? 'if the plan is followed' : 'same opening hours';
+    try { localStorage.setItem('sn-op3', JSON.stringify({S:S, pasted:DAYS.slice(BUILTIN.length)})); } catch(e) {}
+  }
+
+  function parsePaste(text){
+    var data;
+    try { data = JSON.parse(text); } catch(e){ return {error:'That isn\'t valid JSON. Copy the whole page from the price feed and paste it again.'}; }
+    var list = data && Array.isArray(data.prices) ? data.prices : null;
+    if (!list || !list.length) return {error:'No "prices" list found. Paste the data from api.porssisahko.net/v1/latest-prices.json.'};
+    var fmt = new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Helsinki',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'});
+    var byDay = {};
+    list.forEach(function(e){
+      if (typeof e.price!=='number' || !e.startDate) return;
+      var dt = new Date(e.startDate); if (isNaN(dt)) return;
+      var parts = {}; fmt.formatToParts(dt).forEach(function(p){ parts[p.type]=p.value; });
+      var key = parts.year+'-'+parts.month+'-'+parts.day, hr = Number(parts.hour);
+      byDay[key] = byDay[key] || {sum:[],n:[]};
+      byDay[key].sum[hr] = (byDay[key].sum[hr]||0) + e.price;
+      byDay[key].n[hr] = (byDay[key].n[hr]||0) + 1;
+    });
+    var days = Object.keys(byDay).sort().map(function(key){
+      var p = [], have = 0;
+      for (var h=0; h<24; h++){ var n=byDay[key].n[h]; p[h] = n ? Math.round(byDay[key].sum[h]/n*1000)/1000 : null; if (n) have++; }
+      var dt = new Date(key+'T12:00:00Z');
+      var label = dt.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}) + ' (pasted)';
+      return {id:'paste-'+key, label:label, real:true, have:have, note:'Real Finnish spot prices you loaded from Pörssisähkö.net (' + have + ' of 24 hours).', p:p};
+    }).filter(function(d){ return d.have >= 18; });
+    if (!days.length) return {error:'The data didn\'t contain a full enough day (at least 18 hours).'};
+    return {days:days};
+  }
+
+  for (var h=5; h<=20; h++){ var o=document.createElement('option'); o.value=h; o.textContent=pad(h); $('open').appendChild(o); }
+  for (h=8; h<=23; h++){ var c=document.createElement('option'); c.value=h; c.textContent=pad(h); $('close').appendChild(c); }
+  fillDays();
+  ['kw','target','minT','hour','alertThr'].forEach(function(id){ $(id).value = S[id]; });
+  document.querySelector('.recs').addEventListener('click', function(e){
+    var b = e.target.closest('[data-act]'); if (!b || !recs.key) return;
+    var a = b.dataset.act, base = a.replace('No','');
+    acted[recs.key(base)] = ACT[a](S);
+    render();
+  });
+  $('alertDismiss').addEventListener('click', function(){ dismissed[DAY().id+'|'+S.alertThr+'|'+S.contract] = true; $('alertBox').hidden = true; });
+  ['margin','fixed','tday','tnight','tax'].forEach(function(id){ $(id).value = S[id]; });
+  $('contract').value=S.contract; $('open').value=S.open; $('close').value=S.close;
+  $('venue').value=S.venue; $('grid').value=S.grid; $('vat').checked=S.vatOff;
+
+  $('venue').addEventListener('change', function(e){
+    var v = VENUES[e.target.value]; if (!v) return;
+    S.venue=e.target.value; S.kw=v.kw; S.open=v.open; S.close=v.close; S.target=v.target; S.minT=v.minT;
+    S.hour = Math.min(23, Math.max(S.open, S.hour));
+    ['kw','target','minT','hour','open','close'].forEach(function(id){ $(id).value = S[id]; });
+    render();
+  });
+  $('grid').addEventListener('change', function(e){
+    S.grid=e.target.value; var g=GRIDS[S.grid];
+    if (g){ S.tday=g.tday; S.tnight=g.tnight; S.tax=TAX_I; $('tday').value=S.tday; $('tnight').value=S.tnight; $('tax').value=S.tax; }
+    render();
+  });
+  $('vat').addEventListener('change', function(e){ S.vatOff=e.target.checked; render(); });
+  ['tday','tnight'].forEach(function(id){ $(id).addEventListener('input', function(){ if (S.grid!=='custom'){ S.grid='custom'; $('grid').value='custom'; } }); });
+
+  $('day').addEventListener('change', function(e){ S.day=e.target.value; render(); });
+  $('mode').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; S.mode=b.dataset.v; render(); });
+  $('contract').addEventListener('change', function(e){ S.contract=e.target.value; render(); });
+  ['kw','target','minT','hour','alertThr'].forEach(function(id){
+    $(id).addEventListener('input', function(e){ S[id]=Number(e.target.value); if(S.minT>S.target){S.minT=S.target; $('minT').value=S.minT;} render(); });
+  });
+  ['margin','fixed','tday','tnight','tax'].forEach(function(id){
+    $(id).addEventListener('input', function(e){ var v=parseFloat(e.target.value); if(!isNaN(v) && v>=0){ S[id]=v; render(); } });
+  });
+  $('open').addEventListener('change', function(e){ S.open=Number(e.target.value); if(S.close<=S.open){S.close=Math.min(23,S.open+1); $('close').value=S.close;} render(); });
+  $('close').addEventListener('change', function(e){ S.close=Number(e.target.value); if(S.close<=S.open){S.open=Math.max(5,S.close-1); $('open').value=S.open;} render(); });
+  $('chart').addEventListener('click', function(e){ var t=e.target.closest('[data-h]'); if(!t) return; S.hour=Number(t.dataset.h); $('hour').value=S.hour; render(); });
+  $('paste').addEventListener('input', function(){ $('pasteMsg').textContent=''; $('pasteMsg').className='hint'; });
+  $('loadBtn').addEventListener('click', function(){
+    var txt = $('paste').value.trim(), msg = $('pasteMsg');
+    if (!txt){ msg.textContent='Paste the price data first.'; msg.className='err'; return; }
+    var r = parsePaste(txt);
+    if (r.error){ msg.textContent=r.error; msg.className='err'; return; }
+    var ids = r.days.map(function(d){ return d.id; });
+    DAYS = BUILTIN.concat(DAYS.slice(BUILTIN.length).filter(function(d){ return ids.indexOf(d.id)<0; })).concat(r.days);
+    S.day = r.days[r.days.length-1].id;
+    fillDays(); render();
+    msg.textContent = 'Loaded ' + r.days.length + ' day' + (r.days.length>1?'s':'') + '. Showing ' + DAY().label.replace(' (pasted)','') + '.'; msg.className='ok';
+  });
+  render();
+})();
+</script>
+
+</body>
+</html>

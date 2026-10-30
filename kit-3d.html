@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>SteamFox Kit 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one working viewer. Header strip, then a 3D stage beside a parts panel; panel stacks under the stage on phones. */
+:root{
+  --bg:#F4EEE6; --surface:#FBF8F3; --ink:#1F1B18; --muted:#6B5F54; --line:#E2D7C8;
+  --accent:#C8541E; --accent-soft:#F08A4B; --sky:#2F6FA3; --ok:#1E7A4F;
+  --stage-top:#EFE6DA; --stage-bottom:#E4D8C8;
+  --display:'Space Grotesk','Avenir Next','Segoe UI',sans-serif;
+  --body:'Public Sans','Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#17130F; --surface:#221C17; --ink:#F4EEE6; --muted:#B9AC9C; --line:#3A3129;
+  --accent:#F08A4B; --accent-soft:#F6A876; --sky:#8CC0E8; --ok:#5BC08A;
+  --stage-top:#241D17; --stage-bottom:#1A1511; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17130F; --surface:#221C17; --ink:#F4EEE6; --muted:#B9AC9C; --line:#3A3129;
+  --accent:#F08A4B; --accent-soft:#F6A876; --sky:#8CC0E8; --ok:#5BC08A;
+  --stage-top:#241D17; --stage-bottom:#1A1511; color-scheme:dark}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 28px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,4vw,38px);line-height:1.05;margin:2px 0 0;text-wrap:balance}
+header p{margin:0;color:var(--muted);max-width:52ch}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.stage{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);
+  background:linear-gradient(180deg,var(--stage-top),var(--stage-bottom));aspect-ratio:16/10;max-width:100%;min-height:340px;touch-action:none}
+.stage canvas{display:block;width:100%;height:100%;cursor:grab}
+.stage canvas:active{cursor:grabbing}
+.tag{position:absolute;left:0;top:0;transform:translate(-50%,-130%);pointer-events:auto;cursor:pointer;
+  font:600 12px/1 var(--body);white-space:nowrap;padding:6px 10px;border-radius:99px;border:0;
+  background:var(--ink);color:var(--bg);box-shadow:0 2px 6px rgba(0,0,0,.18);transition:opacity .2s}
+.tag::after{content:"";position:absolute;left:50%;bottom:-5px;margin-left:-5px;border:5px solid transparent;border-bottom:0;border-top-color:var(--ink)}
+.tag.on{background:var(--accent);color:#fff}.tag.on::after{border-top-color:var(--accent)}
+.tag.hide{opacity:.18}
+.tag:focus-visible,.part:focus-visible,.ctl:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+.hud{position:absolute;left:12px;bottom:12px;display:flex;flex-wrap:wrap;gap:8px;font-family:var(--mono);font-size:12px}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-variant-numeric:tabular-nums}
+.chip b{font-weight:500;color:var(--accent)}
+.ctls{position:absolute;right:12px;top:12px;display:flex;gap:6px}
+.ctl{font:600 12px var(--body);padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.ctl[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.hint{position:absolute;left:12px;top:12px;font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+aside{display:flex;flex-direction:column;gap:12px;min-width:0}
+.parts{display:flex;flex-direction:column;gap:6px}
+.part{display:grid;grid-template-columns:12px 1fr auto;align-items:center;gap:10px;text-align:left;width:100%;
+  padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font:600 14px var(--body)}
+.part .dot{width:10px;height:10px;border-radius:50%}
+.part .where{font:500 11px var(--mono);color:var(--muted);letter-spacing:.04em}
+.part[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.detail{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.detail h2{font-family:var(--display);font-size:20px;margin:0}
+.detail p{margin:0;color:var(--ink)}
+.specs{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:2px 0 0;font-size:13px}
+.specs dt{color:var(--muted)}.specs dd{margin:0;font-variant-numeric:tabular-nums}
+.note{font-size:12px;color:var(--muted);margin:0}
+@media (prefers-reduced-motion:reduce){.tag{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">SteamFox · hardware kit</div>
+      <h1>The kit, in 3D</h1>
+    </div>
+    <p>A sauna seen in cut-away: the hot room on the left, the changing room on the right. Drag to rotate, pinch or scroll to zoom, and tap a part to see what it does.</p>
+  </header>
+
+  <div class="grid">
+    <div class="stage" id="stage">
+      <div class="hint" id="hint">Drag to rotate</div>
+      <div class="ctls">
+        <button class="ctl" id="spin" aria-pressed="true" type="button">Auto-rotate</button>
+        <button class="ctl" id="reset" type="button">Reset view</button>
+      </div>
+      <div class="hud" aria-live="polite">
+        <span class="chip">Room <b id="temp">78.2 °C</b></span>
+        <span class="chip">Visitors in <b id="count">3</b></span>
+        <span class="chip">Mode <b>Eco plan</b></span>
+      </div>
+    </div>
+
+    <aside>
+      <div class="parts" id="parts" role="group" aria-label="Kit parts"></div>
+      <div class="detail" id="detail" aria-live="polite"></div>
+      <p class="note">Concept model for the Slush Oulu pitch. Shapes, sizes and the live readings are illustrative.</p>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const PARTS={
+  controller:{name:'Controller box',where:'Changing room',color:'#F08A4B',
+    text:'The brain of the kit. It sits safely outside the hot room, reads the heat probe and the door counter, and talks to SteamFox Cloud over Wi-Fi.',
+    specs:[['Chip','ESP32 with Wi-Fi'],['Power','230 V → 5 V supply'],['Housing','IP65 plastic box'],['Talks over','MQTT with TLS']]},
+  probe:{name:'Heat probe',where:'Hot room',color:'#C8541E',
+    text:'The only part inside the hot room. A platinum sensor high on the wall measures the room temperature; its silicone cable runs out through a sealed wall gland.',
+    specs:[['Sensor','PT1000'],['Accuracy','about ±0.5 °C'],['Cable','silicone, 180 °C+'],['Reads every','30 seconds']]},
+  counter:{name:'Door counter',where:'Above the door',color:'#2F6FA3',
+    text:'Counts people going in and out without a camera. A distance sensor looks down through two zones; the order a person crosses them gives the direction.',
+    specs:[['Sensor','VL53L1X time-of-flight'],['Sees','distances only'],['Placement','changing-room side'],['Sends','counts over Wi-Fi']]},
+  relay:{name:'Relay and meter',where:'Electrical panel',color:'#8A8F95',
+    text:'The Autopilot add-on, fitted by an electrician. It gives the heater an on/off signal through its existing control and measures the real kWh used.',
+    specs:[['Relay','DIN-rail, to heater control'],['Meter','Modbus energy meter'],['Fail-safe','back to normal timetable'],['Installed by','registered electrician']]},
+  heater:{name:'Existing heater',where:'Hot room',color:'#4B4642',
+    text:'The sauna keeps its own heater, thermostat and overheat cut-out. SteamFox never bypasses them; it only decides when heating is worth it.',
+    specs:[['Typical size','12–36 kW'],['Supply','400 V three-phase'],['Safety','own thermostat + cut-out'],['SteamFox role','heat later or less']]}
+};
+const ORDER=['controller','probe','counter','relay','heater'];
+
+const stage=document.getElementById('stage');
+let reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* renderer + scene */
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+stage.prepend(renderer.domElement);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(38,16/10,0.1,100);
+const HOME={pos:new THREE.Vector3(1.6,3.3,6.2),target:new THREE.Vector3(-0.3,1.1,-0.4)};
+camera.position.copy(HOME.pos);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.target.copy(HOME.target); controls.enableDamping=true; controls.dampingFactor=0.08;
+controls.minDistance=2; controls.maxDistance=12; controls.maxPolarAngle=Math.PI*0.49;
+controls.autoRotate=!reduce; controls.autoRotateSpeed=0.6;
+
+scene.add(new THREE.HemisphereLight(0xfff4e6,0x5a4636,0.75));
+const sun=new THREE.DirectionalLight(0xffffff,0.75); sun.position.set(4,7,5); sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024); Object.assign(sun.shadow.camera,{left:-5,right:5,top:5,bottom:-5}); scene.add(sun);
+const glow=new THREE.PointLight(0xff7a3a,0.9,4); glow.position.set(-1.1,1.0,0.5); scene.add(glow);
+
+const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.8,metalness:0},o));
+function box(w,h,d,mat,x,y,z,parent=scene){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;parent.add(m);return m}
+
+/* wood texture */
+function woodTex(base,line){const c=document.createElement('canvas');c.width=256;c.height=256;const g=c.getContext('2d');
+  g.fillStyle=base;g.fillRect(0,0,256,256);g.strokeStyle=line;g.lineWidth=3;
+  for(let y=0;y<256;y+=32){g.beginPath();g.moveTo(0,y);g.lineTo(256,y);g.stroke()}
+  g.globalAlpha=.12;for(let i=0;i<60;i++){g.fillStyle=i%2?'#000':'#fff';g.fillRect(Math.random()*256,Math.random()*256,40+Math.random()*60,1.5)}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;return t}
+const wood=woodTex('#9A6B43','#7A4E2D'); wood.repeat.set(2,2);
+const woodMat=M(0xffffff,{map:wood});
+const benchTex=woodTex('#C9935C','#A8744A'); benchTex.repeat.set(3,1);
+const benchMat=M(0xffffff,{map:benchTex});
+const paint=M(0xEDE6DC); const tile=M(0xC9BFB2); const darkFloor=M(0x5A4130);
+
+/* floors */
+box(3.2,0.06,4.4,darkFloor,-1.6,-0.03,0);
+box(3.0,0.06,4.4,tile,1.5,-0.03,0);
+/* partition wall along z at x=0, door from z=-1.55 to -0.7 */
+const wallMats=[paint,woodMat,paint,paint,paint,paint];
+const T=0.16,H=2.6;
+box(T,H,0.45,wallMats,0,H/2,-1.975);
+box(T,H,2.9,wallMats,0,H/2,0.75);
+box(T,H-2.0,0.85,wallMats,0,2.0+(H-2.0)/2,-1.125);
+/* door frame */
+const frame=M(0xC9A27A);
+box(T+0.04,2.0,0.05,frame,0,1.0,-1.575); box(T+0.04,2.0,0.05,frame,0,1.0,-0.675); box(T+0.04,0.05,0.95,frame,0,2.0,-1.125);
+/* hot room back wall */
+box(3.2,H,0.12,woodMat,-1.6,H/2,-2.2);
+/* benches */
+box(2.4,0.06,0.5,benchMat,-1.75,0.48,-1.55); box(2.4,0.06,0.5,benchMat,-1.75,0.95,-1.95);
+[-2.8,-0.7].forEach(x=>{box(0.06,0.48,0.06,benchMat,x,0.24,-1.4);box(0.06,0.95,0.06,benchMat,x,0.47,-1.95)});
+
+/* heater */
+const heater=new THREE.Group(); heater.position.set(-1.15,0,0.55); scene.add(heater);
+box(0.55,0.62,0.5,M(0x3A3A3C,{roughness:.6,metalness:.3}),0,0.31,0,heater);
+[0.2,0.33,0.46].forEach(y=>box(0.4,0.04,0.02,M(0xff6a2a,{emissive:0xff4a10,emissiveIntensity:.9}),0,y,0.26,heater));
+for(let i=0;i<22;i++){const s=new THREE.Mesh(new THREE.IcosahedronGeometry(0.06+Math.random()*0.03,0),M([0x8F8A84,0x6F6A65,0x9A958E,0x7B7670][i%4],{flatShading:true}));
+  s.position.set((Math.random()-.5)*0.44,0.66+Math.random()*0.1,(Math.random()-.5)*0.38);s.castShadow=true;heater.add(s)}
+
+/* steam */
+const puff=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const r=g.createRadialGradient(32,32,0,32,32,32);
+  r.addColorStop(0,'rgba(255,255,255,.9)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c)})();
+const N=60,sp=new Float32Array(N*3),life=new Float32Array(N);
+for(let i=0;i<N;i++){life[i]=Math.random();}
+const steamGeo=new THREE.BufferGeometry();steamGeo.setAttribute('position',new THREE.BufferAttribute(sp,3));
+const steam=new THREE.Points(steamGeo,new THREE.PointsMaterial({size:0.32,map:puff,transparent:true,opacity:.45,depthWrite:false}));scene.add(steam);
+function updSteam(dt){for(let i=0;i<N;i++){life[i]+=dt*0.25;if(life[i]>1)life[i]-=1;const l=life[i],a=i*2.39;
+  sp[i*3]=-1.15+Math.sin(a+l*3)*0.15*l;sp[i*3+1]=0.8+l*1.6;sp[i*3+2]=0.55+Math.cos(a+l*2)*0.15*l}steamGeo.attributes.position.needsUpdate=true}
+
+/* heat probe (hot side, x<0) */
+const probe=new THREE.Group(); probe.position.set(-0.08,2.15,0.55); scene.add(probe);
+box(0.02,0.12,0.12,M(0xD8D8D8,{metalness:.6,roughness:.35}),-0.01,0,0,probe);
+const tip=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.16,16),M(0xC0C4C8,{metalness:.8,roughness:.25}));tip.rotation.z=Math.PI/2;tip.position.set(-0.09,0,0);probe.add(tip);
+
+/* controller (cold side, x>0) */
+function faceTex(){const c=document.createElement('canvas');c.width=512;c.height=384;const g=c.getContext('2d');
+  g.fillStyle='#F08A4B';g.fillRect(0,0,512,384);g.fillStyle='#1F1B18';g.beginPath();g.roundRect?g.roundRect(56,70,400,130,18):g.rect(56,70,400,130);g.fill();
+  g.fillStyle='#F4EEE6';g.font='700 64px sans-serif';g.fillText('78°C',84,158);g.font='600 30px sans-serif';g.fillStyle='#8CC0E8';g.fillText('ECO',340,150);
+  g.fillStyle='#1F1B18';g.font='700 40px sans-serif';g.fillText('SteamFox',56,300);
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return t}
+const ctrl=new THREE.Group(); ctrl.position.set(0.08+0.04,1.45,0.55); scene.add(ctrl);
+const shell=M(0xF08A4B,{roughness:.55});
+const front=new THREE.MeshStandardMaterial({map:faceTex(),roughness:.5});
+const cbox=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.3,0.4),[front,shell,shell,shell,shell,shell]);cbox.castShadow=true;ctrl.add(cbox);
+const led=new THREE.Mesh(new THREE.SphereGeometry(0.012,12,12),M(0x2BD47A,{emissive:0x2BD47A,emissiveIntensity:1}));led.position.set(0.042,-0.11,0.16);ctrl.add(led);
+/* wifi arcs */
+const arcs=[];[0.08,0.13,0.18].forEach((r,i)=>{const a=new THREE.Mesh(new THREE.TorusGeometry(r,0.008,8,32,Math.PI/2),new THREE.MeshBasicMaterial({color:0x2F6FA3,transparent:true,opacity:.6}));
+  a.rotation.y=Math.PI/2;a.rotation.z=Math.PI/4;a.position.set(0.06,0.16,0);ctrl.add(a);arcs.push(a)});
+
+/* cable probe -> controller through wall */
+const cableMat=M(0xC8541E,{roughness:.5});
+function tube(pts,mat,r=0.012){const m=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(...p))),40,r,8,false),mat);m.castShadow=true;scene.add(m);return m}
+tube([[-0.06,2.15,0.55],[0,2.15,0.55],[0.1,2.12,0.55],[0.11,1.85,0.55],[0.12,1.62,0.55]],cableMat);
+
+/* door counter above door, cold side */
+const counter=new THREE.Group(); counter.position.set(0.14,2.08,-1.125); scene.add(counter);
+box(0.08,0.07,0.26,M(0x2F6FA3,{roughness:.5}),0,0,0,counter);
+const lens=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.01,16),M(0x111111,{roughness:.2}));lens.position.set(0,-0.04,0);counter.add(lens);
+const beams=[];[-0.12,0.12].forEach(dz=>{const c=new THREE.Mesh(new THREE.ConeGeometry(0.22,2.0,24,1,true),new THREE.MeshBasicMaterial({color:0x8CC0E8,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false}));
+  c.position.set(0.12,-1.02,dz);counter.add(c);beams.push(c)});
+tube([[0.14,2.08,-0.99],[0.14,2.2,-0.6],[0.12,1.75,0.3]],M(0x9AA7B1),0.008);
+
+/* electrical panel (relay + meter) */
+const panel=new THREE.Group(); panel.position.set(0.14,1.45,1.6); scene.add(panel);
+box(0.1,0.6,0.42,M(0xB9BEC4,{metalness:.3,roughness:.5}),0,0,0,panel);
+box(0.02,0.08,0.3,M(0x2B2B2B),0.06,0.12,0,panel);
+const meterFace=box(0.02,0.1,0.12,M(0xE8F1F7,{emissive:0x8CC0E8,emissiveIntensity:.25}),0.06,-0.08,-0.08,panel);
+box(0.02,0.1,0.08,M(0xF08A4B),0.06,-0.08,0.1,panel);
+tube([[0.14,1.4,1.39],[0.14,1.3,1.0],[0.13,1.38,0.76]],M(0x6B6B6B),0.012);
+
+/* visitor walking through the door */
+const person=new THREE.Group(); scene.add(person);
+const body=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.16,1.05,16),M(0xE8F1F7,{roughness:.9}));body.position.y=0.55;body.castShadow=true;person.add(body);
+const head=new THREE.Mesh(new THREE.SphereGeometry(0.12,16,16),M(0xD9A47A));head.position.y=1.22;head.castShadow=true;person.add(head);
+let walkT=0,count=3,crossed=false;
+function updPerson(dt){walkT+=dt;const cyc=7;const t=(walkT%cyc)/cyc;
+  const x=t<0.6?THREE.MathUtils.lerp(1.6,-1.3,t/0.6):-1.3;person.position.set(x,0,-1.125);person.visible=t<0.66;
+  if(t<0.05)crossed=false; if(!crossed&&x<0){crossed=true;count++;document.getElementById('count').textContent=count;flash()}}
+let flashT=0;function flash(){flashT=0.6}
+
+/* parts registry for picking + focus */
+const groups={controller:ctrl,probe:probe,counter:counter,relay:panel,heater:heater};
+const focus={controller:[2.2,1.8,1.6],probe:[-2.2,2.4,2.0],counter:[2.2,2.0,-0.2],relay:[2.4,1.8,2.8],heater:[-2.6,2.0,2.6]};
+const anchors={controller:[0.15,1.68,0.55],probe:[-0.18,2.3,0.55],counter:[0.16,2.2,-1.125],relay:[0.15,1.82,1.6],heater:[-1.15,0.95,0.55]};
+
+/* tags */
+const tags={};
+ORDER.forEach(k=>{const b=document.createElement('button');b.className='tag';b.type='button';b.textContent=PARTS[k].name;b.addEventListener('click',()=>select(k,true));stage.appendChild(b);tags[k]=b});
+
+/* side panel */
+const partsEl=document.getElementById('parts'),detail=document.getElementById('detail');
+ORDER.forEach(k=>{const b=document.createElement('button');b.className='part';b.type='button';b.id='part-'+k;
+  b.innerHTML=`<span class="dot" style="background:${PARTS[k].color}"></span><span>${PARTS[k].name}</span><span class="where">${PARTS[k].where}</span>`;
+  b.addEventListener('click',()=>select(k,true));partsEl.appendChild(b)});
+let current='controller';
+function render(k){const p=PARTS[k];
+  detail.innerHTML=`<div class="eyebrow">${p.where}</div><h2>${p.name}</h2><p>${p.text}</p><dl class="specs">${p.specs.map(s=>`<dt>${s[0]}</dt><dd>${s[1]}</dd>`).join('')}</dl>`;
+  ORDER.forEach(o=>{document.getElementById('part-'+o).setAttribute('aria-pressed',o===k);tags[o].classList.toggle('on',o===k)})}
+let fly=null;
+function select(k,move){current=k;render(k);
+  if(move){setSpin(false);fly={t:0,fromP:camera.position.clone(),fromT:controls.target.clone(),toP:new THREE.Vector3(...focus[k]).add(new THREE.Vector3(...anchors[k]).multiplyScalar(0)),toT:new THREE.Vector3(...anchors[k])};
+    fly.toP=new THREE.Vector3(...anchors[k]).add(new THREE.Vector3(...focus[k]).sub(new THREE.Vector3(...anchors[k])).setLength(1.9));}}
+render(current);
+
+/* click picking */
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();let down=null;
+renderer.domElement.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];hideHint()});
+renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;
+  const r=renderer.domElement.getBoundingClientRect();mouse.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObjects(Object.values(groups),true);if(!hits.length)return;
+  let o=hits[0].object;while(o&&!Object.values(groups).includes(o))o=o.parent;const k=Object.keys(groups).find(x=>groups[x]===o);if(k)select(k,true)});
+function hideHint(){document.getElementById('hint').hidden=true}
+
+/* controls */
+const spinBtn=document.getElementById('spin');
+function setSpin(v){controls.autoRotate=v;spinBtn.setAttribute('aria-pressed',v)}
+setSpin(!reduce);
+spinBtn.addEventListener('click',()=>setSpin(!controls.autoRotate));
+document.getElementById('reset').addEventListener('click',()=>{fly={t:0,fromP:camera.position.clone(),fromT:controls.target.clone(),toP:HOME.pos.clone(),toT:HOME.target.clone()}});
+controls.addEventListener('start',()=>{fly=null;hideHint()});
+
+/* occlusion for tags */
+const occluders=[];scene.traverse(o=>{if(o.isMesh&&o.geometry.type==='BoxGeometry'&&o.parent===scene)occluders.push(o)});
+const v=new THREE.Vector3(),dir=new THREE.Vector3(),orc=new THREE.Raycaster();
+function placeTags(){const r=renderer.domElement.getBoundingClientRect();
+  ORDER.forEach(k=>{v.set(...anchors[k]);const d=v.distanceTo(camera.position);dir.copy(v).sub(camera.position).normalize();orc.set(camera.position,dir);orc.far=d-0.05;
+    const blocked=orc.intersectObjects(occluders,false).length>0;v.project(camera);const el=tags[k];
+    el.style.left=((v.x+1)/2*r.width)+'px';el.style.top=((1-v.y)/2*r.height)+'px';el.classList.toggle('hide',blocked&&k!==current);el.hidden=v.z>1})}
+
+/* resize + theme */
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(stage);resize();
+
+/* loop */
+const clock=new THREE.Clock();let tempT=0;
+function tick(){const dt=Math.min(clock.getDelta(),0.05);const time=clock.elapsedTime;
+  if(fly){fly.t=Math.min(1,fly.t+dt/1.1);const e=fly.t<.5?2*fly.t*fly.t:1-Math.pow(-2*fly.t+2,2)/2;camera.position.lerpVectors(fly.fromP,fly.toP,e);controls.target.lerpVectors(fly.fromT,fly.toT,e);if(fly.t>=1)fly=null}
+  controls.update();
+  const m=reduce?0.3:1;updSteam(dt*m);updPerson(dt*m);
+  arcs.forEach((a,i)=>a.material.opacity=0.15+0.6*Math.max(0,Math.sin(time*3-i*0.9)));
+  led.material.emissiveIntensity=0.6+0.4*Math.sin(time*4);
+  glow.intensity=0.8+0.15*Math.sin(time*2.3);
+  if(flashT>0){flashT-=dt;beams.forEach(b=>b.material.opacity=0.14+0.35*Math.max(0,flashT/0.6))}
+  tempT+=dt;if(tempT>1.5){tempT=0;document.getElementById('temp').textContent=(78+Math.sin(time/4)*0.6).toFixed(1)+' °C'}
+  Object.entries(groups).forEach(([k,g])=>{const s=k===current?1+0.04*Math.sin(time*4):1;g.scale.setScalar(k==='heater'?1:s)});
+  renderer.render(scene,camera);placeTags();requestAnimationFrame(tick)}
+tick();
+})();
+</script>
+
+</body>
+</html>

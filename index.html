@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SteamFox</title>
+<meta name="description" content="SteamFox heats commercial saunas when electricity is cheap and people are coming. Hot when you arrive. Cheap while it heats.">
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: dark brand band with logo and promise, then three facts, then two doorways (3D kit, live demo), then the pilot ask. */
+:root{
+  --bg:#F4EEE6; --surface:#FBF8F3; --ink:#1F1B18; --muted:#6B5F54; --line:#E2D7C8;
+  --band:#1F1B18; --band-ink:#F4EEE6; --accent:#C8541E; --accent-2:#F08A4B;
+  --display:'Space Grotesk','Avenir Next','Segoe UI',sans-serif;
+  --body:'Public Sans','Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#17130F; --surface:#221C17; --ink:#F4EEE6; --muted:#B9AC9C; --line:#3A3129;
+  --band:#0F0C0A; --band-ink:#F4EEE6; --accent:#F08A4B; --accent-2:#F6A876; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{background:var(--bg);margin:0}
+body{color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.in{max-width:1080px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.band{background:var(--band);color:var(--band-ink)}
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);gap:24px;align-items:center;padding-block:56px 48px}
+@media (max-width:760px){.hero{grid-template-columns:1fr;padding-block:36px}.hero img{max-width:180px}}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-2)}
+h1{font-family:var(--display);font-size:clamp(44px,8vw,84px);line-height:.95;margin:8px 0 18px;letter-spacing:-.01em}
+.promise{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.2vw,32px);line-height:1.15;margin:0 0 16px;text-wrap:balance}
+.promise span{color:var(--accent-2)}
+.lede{max-width:52ch;color:#D8CCBD;margin:0}
+.hero img{width:100%;max-width:300px;justify-self:center;height:auto}
+section{padding-block:44px}
+h2{font-family:var(--display);font-size:clamp(24px,3vw,32px);margin:0 0 18px;text-wrap:balance}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.facts{grid-template-columns:1fr}}
+.fact{border-top:3px solid var(--accent);padding-top:12px}
+.fact b{display:block;font-family:var(--display);font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums}
+.fact p{margin:4px 0 0;color:var(--muted)}
+.doors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.doors{grid-template-columns:1fr}}
+.door{display:flex;flex-direction:column;gap:8px;padding:22px;border-radius:14px;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none}
+.door:hover,.door:focus-visible{border-color:var(--accent);outline:none}
+.door h3{font-family:var(--display);font-size:22px;margin:0}
+.door p{margin:0;color:var(--muted)}
+.door .go{font-weight:700;color:var(--accent);margin-top:auto}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;counter-reset:s}
+@media (max-width:760px){.how{grid-template-columns:1fr}}
+.how div{counter-increment:s}
+.how div::before{content:counter(s);display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--bg);font:700 14px var(--mono);margin-bottom:8px}
+.how h3{margin:0 0 4px;font-size:17px}.how p{margin:0;color:var(--muted)}
+.ask{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-wrap:wrap;gap:12px 32px;align-items:center;justify-content:space-between}
+.ask p{margin:0;max-width:56ch}
+.mail{font-family:var(--mono);font-size:14px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;user-select:all}
+footer{padding-block:28px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="band"><div class="in hero">
+  <div>
+    <div class="eyebrow">Slush Oulu 2026 · Oulu, Finland</div>
+    <h1>SteamFox</h1>
+    <p class="promise">Hot when you arrive.<br><span>Cheap while it heats.</span></p>
+    <p class="lede">A small add-on kit and smart planning for commercial saunas. SteamFox heats when electricity is cheap and people are coming, and shows bathers which sauna is hot and how busy it is.</p>
+  </div>
+  <img src="logo.png" alt="SteamFox logo: a geometric orange fox with sauna steam rising between its ears" width="300" height="300">
+</div></div>
+
+<main>
+<section><div class="in">
+  <h2>Why saunas need it</h2>
+  <div class="facts">
+    <div class="fact"><b>12–36 kW</b><p>Typical commercial heaters, often running for hours on a fixed timetable.</p></div>
+    <div class="fact"><b>Every 15 min</b><p>Finnish spot electricity prices change all day, with sharp winter spikes.</p></div>
+    <div class="fact"><b>≈15% less</b><p>Daily electricity cost in our model of a public sauna, on real Oulu prices.</p></div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="in">
+  <h2>See it working</h2>
+  <div class="doors">
+    <a class="door" href="kit-3d.html"><h3>The kit in 3D</h3><p>Rotate a cut-away sauna and tap each part: heat probe, controller, camera-free door counter, relay and meter.</p><span class="go">Open the 3D model →</span></a>
+    <a class="door" href="demo.html"><h3>Operator demo</h3><p>The owner's dashboard on real Finnish spot prices: heating plan, peak alerts and the saving for the day.</p><span class="go">Open the demo →</span></a>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="in">
+  <h2>How it works</h2>
+  <div class="how">
+    <div><h3>Measure</h3><p>A heat probe and a door counter report temperature and visitors. No cameras.</p></div>
+    <div><h3>Plan</h3><p>SteamFox Cloud reads tomorrow's prices and expected visitors, and plans the cheapest way to be hot on time.</p></div>
+    <div><h3>Act</h3><p>Owners get alerts and one-tap advice, or let Autopilot run it. Bathers check the live map.</p></div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="in">
+  <div class="ask">
+    <p><b>Run a sauna in Oulu?</b> We're looking for two or three pilot saunas this winter. Advisory mode needs no wiring.</p>
+    <span class="mail">hello@steamfox.example</span>
+  </div>
+</div></section>
+</main>
+
+<footer><div class="in">SteamFox · Kazi Mehedi Hasan Joy, Ramisa Fariha Mridha, Tahsin Shadman · Concept for the Slush Oulu Pitching Competition 2026. Savings are modelled, not yet measured.</div></footer>
+</body>
+</html>
